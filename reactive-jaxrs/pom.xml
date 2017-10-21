@@ -66,7 +66,7 @@
     <dependency>
       <groupId>org.jboss.resteasy</groupId>
       <artifactId>resteasy-jackson-provider</artifactId>
-      <version>3.0.16.Final</version>
+      <version>3.0.19.Final</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -99,6 +99,19 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-client</artifactId>
+      <version>3.0.19.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- version is copied from resteasy-client -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.3.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -169,7 +182,7 @@
         <dependency>
           <groupId>javax.servlet</groupId>
           <artifactId>javax.servlet-api</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.0</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
