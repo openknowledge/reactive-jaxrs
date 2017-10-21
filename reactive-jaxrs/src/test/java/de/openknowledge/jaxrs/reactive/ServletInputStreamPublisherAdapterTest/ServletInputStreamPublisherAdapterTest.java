@@ -8,6 +8,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -17,7 +18,7 @@ import java.util.Optional;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(org.junit.runners.JUnit4.class)
+@RunWith(MockitoJUnitRunner.class)
 public class ServletInputStreamPublisherAdapterTest {
 
   @Mock
