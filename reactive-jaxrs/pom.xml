@@ -123,7 +123,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.4.201502262128</version>
+        <version>0.7.9</version>
         <executions>
           <execution>
             <id>default-prepare-agent</id>
@@ -209,15 +209,13 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.17</version>
             <configuration>
               <!-- Fork every test because it will launch a separate AS instance -->
-              <forkMode>always</forkMode>
+              <reuseForks>false</reuseForks>
               <systemPropertyVariables>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <!-- the maven dependency plugin will have already downloaded the server on /target -->
                 <jboss.home>${project.basedir}/target/wildfly-${jboss.version}</jboss.home>
-                <module.path>${project.basedir}/target/wildfly-${jboss.version}/modules</module.path>
               </systemPropertyVariables>
               <redirectTestOutputToFile>false</redirectTestOutputToFile>
             </configuration>
@@ -227,24 +225,11 @@
     </profile>
     <profile>
       <id>tomee</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>de.openknowledge.jaxrs.versioning.AddressResourceWithNoTypeInformationTest</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
       <dependencies>
         <dependency>
           <groupId>org.apache.tomee</groupId>
           <artifactId>arquillian-tomee-embedded</artifactId>
-          <version>7.0.3</version>
+          <version>7.0.4</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -254,51 +239,32 @@
           <scope>provided</scope>
         </dependency>
         <dependency>
-          <groupId>org.apache.myfaces.core</groupId>
-          <artifactId>myfaces-api</artifactId>
-          <version>2.2.8</version>
-          <scope>provided</scope>
-        </dependency>
-        <dependency>
           <groupId>org.apache.tomee</groupId>
           <artifactId>openejb-core</artifactId>
-          <version>7.0.3</version>
+          <version>7.0.4</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.apache.tomee</groupId>
           <artifactId>tomee-embedded</artifactId>
-          <version>7.0.3</version>
+          <version>7.0.4</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
     <profile>
       <id>payara</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>de.openknowledge.jaxrs.versioning.AddressResourceWithNoTypeInformationTest</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
       <dependencies>
         <dependency>
-          <groupId>org.jboss.arquillian.container</groupId>
-          <artifactId>arquillian-glassfish-embedded-3.1</artifactId>
-          <version>1.0.0.CR4</version>
+          <groupId>fish.payara.arquillian</groupId>
+          <artifactId>arquillian-payara-server-4-embedded</artifactId>
+          <version>1.0.Beta2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>fish.payara.extras</groupId>
           <artifactId>payara-embedded-all</artifactId>
-          <version>4.1.1.163.0.1</version>
+          <version>5.0.0.Alpha2</version>
           <scope>test</scope>
         </dependency>
         <dependency>
