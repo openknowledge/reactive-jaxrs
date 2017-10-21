@@ -13,6 +13,7 @@
 
 package de.openknowledge.jaxrs.reactive;
 
+import javax.inject.Inject;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class ServletInputStreamPublisherAdapter extends SubmissionPublisher<Byte
   /**
    * The servlet input stream
    */
+  @Inject
   private ServletInputStream servletInputStream;
 
   /**
@@ -47,11 +49,8 @@ public class ServletInputStreamPublisherAdapter extends SubmissionPublisher<Byte
 
   /**
    * Constructor
-   * @param servletInputStream Servlet input stream to read from asynchronously.
    */
-  public ServletInputStreamPublisherAdapter(ServletInputStream servletInputStream) {
-
-    this.servletInputStream = servletInputStream;
+  protected ServletInputStreamPublisherAdapter() {
     this.subscribers = new HashMap<>();
   }
 
