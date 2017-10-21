@@ -56,4 +56,10 @@ public class Customer {
     result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return String.format("%s{firstName=%s, lastName=%s}",
+      getClass().getSimpleName(), firstName, lastName);
+  }
 }
