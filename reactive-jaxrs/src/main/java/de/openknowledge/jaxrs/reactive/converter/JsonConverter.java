@@ -38,6 +38,8 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
 
   private int byteBufferPosition = 0;
 
+  private Flow.Subscription subscription;
+
   /**
    * have to be a field for the case: first bytes contain first bytes of a json object following bytes contain the rest
    */
@@ -60,7 +62,7 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
   // Subscriber
   @Override
   public void onSubscribe(Flow.Subscription subscription) {
-
+    this.subscription = subscription;
     // later for back pressing
   }
 
@@ -70,6 +72,8 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
     byte[] bytes = {item};
 
     handleNextBytes(bytes);
+
+    this.subscription.request(1);
   }
 
   @Override
@@ -153,10 +157,10 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
    */
   private void removeBytesFromBuffer(int n) {
 
-    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n, byteBufferPosition);
+    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n + 1, byteBufferPosition);
     byteBufferPosition = 0;
     addToByteBuffer(validBytes);
 
-    parsedCharactersOffset += n;
+    parsedCharactersOffset += n + 1;
   }
 }

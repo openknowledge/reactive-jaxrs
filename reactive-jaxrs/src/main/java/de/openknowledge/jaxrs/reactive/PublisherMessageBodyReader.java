@@ -66,33 +66,42 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       throw new IllegalArgumentException();
     }
 
-    ServletInputStream servletInputStream = request.getInputStream();
-
-    ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
-
-
-    JsonConverter jsonConverter = new JsonConverter();
-
-    publisherAdapter.subscribe(jsonConverter);
-
-    ObjectMapper mapper = new ObjectMapper();
-
-    AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
+    return new Flow.Publisher<>() {
       @Override
-      protected Object process(String item) {
+      public void subscribe(Flow.Subscriber<? super Object> subscriber) {
+        ServletInputStream servletInputStream = null;
         try {
-          return mapper.reader().forType(targetClass).readValue(item);
+          servletInputStream = request.getInputStream();
         } catch (IOException e) {
-          this.onError(e);
+          e.printStackTrace();
         }
 
-        return null;
+        ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
+
+        JsonConverter jsonConverter = new JsonConverter();
+
+        publisherAdapter.subscribe(jsonConverter);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
+          @Override
+          protected Object process(String item) {
+            try {
+              return mapper.reader().forType(targetClass).readValue(item);
+            } catch (IOException e) {
+              this.onError(e);
+            }
+
+            return null;
+          }
+        };
+
+        jsonConverter.subscribe(processor);
+
+        processor.subscribe(subscriber);
       }
     };
-
-    jsonConverter.subscribe(processor);
-
-    return processor;
 
 //    // TODO should not rely on jackson implementation
 //    ObjectMapper mapper = new ObjectMapper();

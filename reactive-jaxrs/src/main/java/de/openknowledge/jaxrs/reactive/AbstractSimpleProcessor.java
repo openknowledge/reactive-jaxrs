@@ -7,6 +7,7 @@ import java.util.concurrent.Flow;
  */
 public abstract class AbstractSimpleProcessor<T, R> implements Flow.Processor<T, R> {
 
+  private boolean error = false;
   private Flow.Subscription parentSubscription;
   private Flow.Subscription childSubscription;
   private Flow.Subscriber<? super R> childSubscriber;
@@ -41,6 +42,8 @@ public abstract class AbstractSimpleProcessor<T, R> implements Flow.Processor<T,
   public void onError(Throwable throwable) {
     if (childSubscriber != null) {
       childSubscriber.onError(throwable);
+      childSubscriber = null;
+      error = true;
     }
   }
 
@@ -52,4 +55,8 @@ public abstract class AbstractSimpleProcessor<T, R> implements Flow.Processor<T,
   }
 
   protected abstract R process(T item);
+
+  public boolean hasError() {
+    return error;
+  }
 }

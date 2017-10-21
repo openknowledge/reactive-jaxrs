@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  */
 public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> {
 
+  private boolean started = false;
+
   /**
    * The servlet input stream
    */
@@ -70,6 +72,9 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
    * @param subscriber
    */
   @Override public void subscribe(Flow.Subscriber<? super Byte> subscriber) {
+    if (!started) {
+      startReading();
+    }
 
     NoBackpressureSubscription subscription = new NoBackpressureSubscription(this);
 
@@ -158,9 +163,10 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
     }
 
     private void fireOnCompleted() {
-      this.subscribers.keySet().forEach(subscriber -> {
-        subscriber.onComplete();
-      });
+        this.subscribers.keySet().forEach(subscriber -> {
+          subscriber.onComplete();
+        });
+        subscribers.clear();
     }
 
     private void fireOnError(Throwable e) {
