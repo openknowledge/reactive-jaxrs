@@ -15,6 +15,8 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
 
   private boolean completed = false;
 
+  private Throwable exception;
+
   /**
    * Constructor.
    */
@@ -27,7 +29,7 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
   }
 
   @Override public void onError(Throwable throwable) {
-
+    this.exception = throwable;
   }
 
   @Override public void onComplete() {
@@ -52,5 +54,13 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
    */
   public boolean isCompleted() {
     return completed;
+  }
+
+  /**
+   * Gets exception received by onError().
+   * @return Can be null of no exception has been received until now.
+   */
+  public Throwable getException() {
+    return exception;
   }
 }

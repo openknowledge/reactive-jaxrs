@@ -108,4 +108,34 @@ public class ServletInputStreamPublisherAdapterTest {
     // asserts
     Assert.assertThat(bufferedSubscriber.isCompleted(), CoreMatchers.equalTo(true));
   }
+
+  @Test public void whenIoExceptionThrownOnReadExpectOnErrorCalled() throws Exception {
+    IOException expectedException = new IOException();
+
+    AnswerArg1<ReadListener> answer = new AnswerArg1<>();
+
+    BufferedSubscriber<Object> bufferedSubscriber = new BufferedSubscriber<>();
+
+    // mock setup
+    // receive setReadListener's argument
+    Mockito
+      .doAnswer(answer)
+      .when(servletInputStreamMock).setReadListener(Mockito.any(ReadListener.class));
+
+    // return one byte on ServletInputStream.read
+    when(servletInputStreamMock.read())
+      .thenThrow(expectedException);
+
+    when(servletInputStreamMock.isReady())
+      .thenReturn(true);
+
+    servletInputStreamPublisherAdapter.startReading();
+    servletInputStreamPublisherAdapter.subscribe(bufferedSubscriber);
+
+    // inform about data availability
+    answer.getArg().onDataAvailable();
+
+    // asserts
+    Assert.assertThat(bufferedSubscriber.getException(), CoreMatchers.equalTo(expectedException));
+  }
 }

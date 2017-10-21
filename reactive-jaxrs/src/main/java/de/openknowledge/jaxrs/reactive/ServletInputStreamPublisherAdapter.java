@@ -128,19 +128,26 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
 
     @Override public void onDataAvailable() throws IOException {
       while(servletInputStream.isReady()) {
-        int readByte = servletInputStream.read();
-        if (readByte != -1) {
-          this.subscribers.keySet().forEach(subscriber -> {
+        try {
+          int readByte = servletInputStream.read();
+          if (readByte != -1) {
+            this.subscribers.keySet().forEach(subscriber -> {
 
-            subscriber.onNext((byte)readByte);
-          });
-        }
-        else
-        {
-          this.subscribers.keySet().forEach(subscriber -> {
-            subscriber.onComplete();
-          });
+              subscriber.onNext((byte)readByte);
+            });
+          }
+          else
+          {
+            this.subscribers.keySet().forEach(subscriber -> {
+              subscriber.onComplete();
+            });
 
+            break;
+          }
+        } catch (IOException e) {
+          this.subscribers.keySet().forEach(subscriber -> {
+            subscriber.onError(e);
+          });
           break;
         }
       }
