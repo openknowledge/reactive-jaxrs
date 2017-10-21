@@ -33,7 +33,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jboss.version>8.2.1.Final</jboss.version>
+    <jboss.version>10.1.0.Final</jboss.version>
     <maven.compiler.target>1.9</maven.compiler.target>
     <maven.compiler.source>1.9</maven.compiler.source>
     <argLine>${jacoco.agent}</argLine>
@@ -43,22 +43,8 @@
     <dependencies>
       <dependency>
         <groupId>org.wildfly.bom</groupId>
-        <artifactId>jboss-javaee-7.0-with-tools</artifactId>
+        <artifactId>wildfly-javaee7-with-tools</artifactId>
         <version>${jboss.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.bom</groupId>
-        <artifactId>jboss-javaee-7.0-with-hibernate</artifactId>
-        <version>${jboss.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian.extension</groupId>
-        <artifactId>arquillian-warp-bom</artifactId>
-        <version>1.0.0.Alpha7</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -96,12 +82,6 @@
     <dependency>
       <groupId>org.jboss.arquillian.protocol</groupId>
       <artifactId>arquillian-protocol-servlet</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.extension</groupId>
-      <artifactId>arquillian-warp</artifactId>
-      <type>pom</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -193,7 +173,7 @@
           <scope>provided</scope>
         </dependency>
         <dependency>
-          <groupId>org.wildfly</groupId>
+          <groupId>org.wildfly.arquillian</groupId>
           <artifactId>wildfly-arquillian-container-managed</artifactId>
           <scope>test</scope>
         </dependency>
