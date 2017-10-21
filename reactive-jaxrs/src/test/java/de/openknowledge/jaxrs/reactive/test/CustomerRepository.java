@@ -1,6 +1,7 @@
 package de.openknowledge.jaxrs.reactive.test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
@@ -9,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
@@ -25,12 +28,46 @@ public class CustomerRepository {
   private Path path;
   
   @PostConstruct
-  public void initialize() throws JAXBException, IOException {
-    context = JAXBContext.newInstance(Customer.class);
-    path = Paths.get("customers.xml");
-    if (!Files.exists(path)) {
-      Files.createFile(path);
+  public void initialize() {
+    try {
+      context = JAXBContext.newInstance(Customer.class);
+      path = Paths.get("customers.xml");
+      if (!Files.exists(path)) {
+        Files.createFile(path);
+      }
+    } catch (JAXBException | IOException e) {
+      throw new IllegalStateException(e);
     }
+  }
+
+  public void save(List<Customer> customers) throws IOException {
+    save(new Publisher<Customer>() {
+
+      private Iterator<Customer> customerIterator = customers.iterator();
+
+      @Override
+      public void subscribe(Subscriber<? super Customer> subscriber) {
+        subscriber.onSubscribe(new Subscription() {
+          
+          @Override
+          public void request(long count) {
+            for (int i = 0; i < count; i++) {
+              if (customerIterator.hasNext()) {
+                subscriber.onNext(customerIterator.next());
+              }
+            }
+            if (!customerIterator.hasNext()) {
+              subscriber.onComplete();
+            }
+          }
+          
+          @Override
+          public void cancel() {
+            throw new IllegalStateException("cancel not supported");
+          }
+        });
+      }
+    });
   }
 
   public void save(Publisher<Customer> customers) throws IOException {
@@ -97,5 +134,9 @@ public class CustomerRepository {
         throw new IllegalStateException(t);
       }
     });
+  }
+
+  public List<Customer> findAll() throws JAXBException {
+    return (List<Customer>) context.createUnmarshaller().unmarshal(new File("customers.xml"));
   }
 }
