@@ -70,7 +70,6 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
 
     ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
 
-
     JsonConverter jsonConverter = new JsonConverter();
 
     publisherAdapter.subscribe(jsonConverter);

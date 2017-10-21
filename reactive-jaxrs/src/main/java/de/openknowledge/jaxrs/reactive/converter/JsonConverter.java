@@ -16,7 +16,6 @@ import de.undercouch.actson.DefaultJsonFeeder;
 import de.undercouch.actson.JsonEvent;
 import de.undercouch.actson.JsonParser;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Flow;
@@ -24,7 +23,7 @@ import java.util.concurrent.Flow;
 /**
  * @author Robert Zilke - open knowledge GmbH
  */
-public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
+public class JsonConverter implements Flow.Processor<byte[], String> {
 
   private final JsonParser jsonParser;
 
@@ -37,7 +36,13 @@ public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
 
   private byte[] byteBuffer;
 
+  private boolean isCompleted;
+
   private int byteBufferPosition = 0;
+
+  private Level nestedObjectLevel;
+
+  private Level nestedArrayLevel;
 
   /**
    * have to be a field for the case: first bytes contain first bytes of a json object following bytes contain the rest
@@ -49,6 +54,9 @@ public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
 
     jsonParser = new JsonParser(new DefaultJsonFeeder(StandardCharsets.UTF_8));
     byteBuffer = new byte[1024];
+
+    nestedObjectLevel = new Level();
+    nestedArrayLevel = new Level();
   }
 
   // Publisher
@@ -66,31 +74,24 @@ public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
   }
 
   @Override
-  public void onNext(ByteBuffer item) {
+  public void onNext(byte[] item) {
 
-    item.flip();
-
-    while(item.hasRemaining()) {
-
-      item = item.get(this.byteBuffer);
-
-      handleNextBytes(this.byteBuffer);
-    }
-
-
-    item.clear();
+    handleNextBytes(item);
   }
 
   @Override
   public void onError(Throwable throwable) {
-
+    subscriber.onError(throwable);
   }
 
   @Override
   public void onComplete() {
 
-    // todo: be sure to consume last bytes
-    subscriber.onComplete();
+    if (!isCompleted) {
+      isCompleted = true;
+      // todo: be sure to consume last bytes
+      subscriber.onComplete();
+    }
   }
 
   private void handleNextBytes(byte[] jsonBytes) {
@@ -112,36 +113,54 @@ public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
 
       event = jsonParser.nextEvent();
 
-      if (event == JsonEvent.START_OBJECT) {
-        startOfObjectIndex = jsonParser.getParsedCharacterCount();
-      }
+      switch (event) {
 
-      if (event == JsonEvent.END_OBJECT) {
-        int endOfObjectIndex = jsonParser.getParsedCharacterCount();
-
-        byte[] bufferedBytes = getBytesInBuffer();
-
-        int start = startOfObjectIndex - parsedCharactersOffset - 1;
-        int end = endOfObjectIndex - parsedCharactersOffset;
-
-        byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, start, end);
-        subscriber.onNext(new String(parsedObjectBytes));
-        // System.out.println("Object: " + new String(parsedObjectBytes));
-
-        removeBytesFromBuffer(parsedObjectBytes.length);
-      }
-
-      // handle event
-      // System.out.println("JSON event: " + event);
-      if (event == JsonEvent.ERROR) {
+      case JsonEvent.START_OBJECT:
+        if (nestedObjectLevel.isOnRootLevel()) {
+          startOfObjectIndex = jsonParser.getParsedCharacterCount();
+        }
+        nestedObjectLevel.increment();
+        break;
+      case JsonEvent.END_OBJECT:
+        nestedObjectLevel.decrement();
+        if (nestedObjectLevel.isOnRootLevel()) {
+          onEndObjectReached();
+        }
+        break;
+      case JsonEvent.START_ARRAY:
+        nestedArrayLevel.increment();
+        break;
+      case JsonEvent.END_ARRAY:
+        nestedArrayLevel.decrement();
+        if (nestedArrayLevel.isOnRootLevel()) {
+          onComplete();
+        }
+        break;
+      case JsonEvent.ERROR:
         subscriber.onError(new IllegalStateException("Syntax error in JSON text"));
+        break;
+      default:
+        // nothing
       }
 
-      if (event == JsonEvent.END_ARRAY) {
-        subscriber.onComplete();
-      }
       // do until all jsonBytes consumed and more input needed
     } while (!(jsonBytesPosition == jsonBytes.length && event == JsonEvent.NEED_MORE_INPUT));
+  }
+
+  private void onEndObjectReached() {
+
+    int endOfObjectIndex = jsonParser.getParsedCharacterCount();
+
+    byte[] bufferedBytes = getBytesInBuffer();
+
+    int start = startOfObjectIndex - parsedCharactersOffset - 1;
+    int end = endOfObjectIndex - parsedCharactersOffset;
+
+    byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, start, end);
+    subscriber.onNext(new String(parsedObjectBytes));
+    // System.out.println("Object: " + new String(parsedObjectBytes));
+
+    removeBytesFromBuffer(parsedObjectBytes.length);
   }
 
   private byte[] getBytesInBuffer() {
@@ -162,10 +181,10 @@ public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
    */
   private void removeBytesFromBuffer(int n) {
 
-    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n, byteBufferPosition);
+    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n + 1, byteBufferPosition);
     byteBufferPosition = 0;
     addToByteBuffer(validBytes);
 
-    parsedCharactersOffset += n;
+    parsedCharactersOffset += n + 1;
   }
 }
