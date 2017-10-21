@@ -1,5 +1,6 @@
 package de.openknowledge.jaxrs.reactive.test;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -19,6 +20,9 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.client.Entity.entity;
@@ -41,11 +45,20 @@ public class CustomerBatchUploadTest {
   @Test
   public void put(@ArquillianResource URL url) throws URISyntaxException, IOException {
 
+    int amount = 100000;
+
+    List<Customer> randomCustomer = createRandomCustomers(amount);
+
+    Instant start = Instant.now();
+
     // Upload some Customers
     ClientBuilder.newClient().target(url.toURI())
       .path("customers")
       .request()
-      .put(entity(getClass().getResourceAsStream("/customers.json"), MediaType.APPLICATION_JSON_TYPE));
+      .put(entity(randomCustomer, MediaType.APPLICATION_JSON_TYPE));
+
+    Instant end = Instant.now();
+    Duration duration = Duration.between(start, end);
 
     // Get the uploaded Customers
     Response response = ClientBuilder.newClient().target(url.toURI())
@@ -55,6 +68,28 @@ public class CustomerBatchUploadTest {
 
     List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
 
-    assertThat(customers.size()).isEqualTo(1000);
+    assertThat(customers.size()).isEqualTo(amount);
+
+    System.out.println(String.format("**** Customers: %s, Duration: %s ms", amount, duration.toMillis()));
   }
+
+  private List<Customer> createRandomCustomers(int amount) {
+    List<Customer> list = new ArrayList<>(amount);
+    for (int i = 0; i < amount; i++) {
+      list.add(createRandomCustomer());
+    }
+    return list;
+  }
+
+  private Customer createRandomCustomer() {
+    Customer customer = new Customer();
+    customer.setFirstName(createRandomString(15));
+    customer.setLastName(createRandomString(15));
+    return customer;
+  }
+
+  private String createRandomString(int length) {
+    return RandomStringUtils.random(length, /*useLetters*/ true, /*useNumbers*/ false);
+  }
+
 }

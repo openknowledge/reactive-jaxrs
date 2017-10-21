@@ -71,6 +71,6 @@ public class CustomerTest {
     customer.setLastName("Doe");
 
     assertThat(customers).isEqualTo(List.of(customer));
-
   }
+
 }
