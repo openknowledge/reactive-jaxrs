@@ -17,14 +17,12 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.openknowledge.jaxrs.reactive.test.StopWatch.time;
 import static javax.ws.rs.client.Entity.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,22 +41,19 @@ public class CustomerBatchUploadTest {
   }
 
   @Test
-  public void put(@ArquillianResource URL url) throws URISyntaxException, IOException {
+  public void put(@ArquillianResource URL url) throws Exception {
 
     int amount = 100000;
 
     List<Customer> randomCustomer = createRandomCustomers(amount);
 
-    Instant start = Instant.now();
-
     // Upload some Customers
-    ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
-      .request()
-      .put(entity(randomCustomer, MediaType.APPLICATION_JSON_TYPE));
-
-    Instant end = Instant.now();
-    Duration duration = Duration.between(start, end);
+    Duration duration = time(() ->
+      ClientBuilder.newClient().target(url.toURI())
+        .path("customers")
+        .request()
+        .put(entity(randomCustomer, MediaType.APPLICATION_JSON_TYPE))
+    );
 
     // Get the uploaded Customers
     Response response = ClientBuilder.newClient().target(url.toURI())
@@ -66,8 +61,8 @@ public class CustomerBatchUploadTest {
       .request(MediaType.APPLICATION_JSON)
       .get();
 
-    List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
-
+    List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {
+    });
     assertThat(customers.size()).isEqualTo(amount);
 
     System.out.println(String.format("**** Customers: %s, Duration: %s ms", amount, duration.toMillis()));
@@ -91,5 +86,4 @@ public class CustomerBatchUploadTest {
   private String createRandomString(int length) {
     return RandomStringUtils.random(length, /*useLetters*/ true, /*useNumbers*/ false);
   }
-
 }
