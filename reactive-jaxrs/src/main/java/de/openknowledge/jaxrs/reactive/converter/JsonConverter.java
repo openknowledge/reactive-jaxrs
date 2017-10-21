@@ -16,6 +16,7 @@ import de.undercouch.actson.DefaultJsonFeeder;
 import de.undercouch.actson.JsonEvent;
 import de.undercouch.actson.JsonParser;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Flow;
@@ -23,7 +24,7 @@ import java.util.concurrent.Flow;
 /**
  * @author Robert Zilke - open knowledge GmbH
  */
-public class JsonConverter implements Flow.Processor<Byte, String> {
+public class JsonConverter implements Flow.Processor<ByteBuffer, String> {
 
   private final JsonParser jsonParser;
 
@@ -65,11 +66,19 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
   }
 
   @Override
-  public void onNext(Byte item) {
+  public void onNext(ByteBuffer item) {
 
-    byte[] bytes = {item};
+    item.flip();
 
-    handleNextBytes(bytes);
+    while(item.hasRemaining()) {
+
+      item = item.get(this.byteBuffer);
+
+      handleNextBytes(this.byteBuffer);
+    }
+
+
+    item.clear();
   }
 
   @Override

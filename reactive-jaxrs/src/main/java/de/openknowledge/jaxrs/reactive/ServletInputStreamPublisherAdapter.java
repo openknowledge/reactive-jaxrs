@@ -17,6 +17,7 @@ import javax.inject.Inject;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -34,18 +35,17 @@ import java.util.stream.Collectors;
  * @version 1.0
  *
  */
-public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> {
+public class ServletInputStreamPublisherAdapter implements Flow.Publisher<ByteBuffer> {
 
   /**
    * The servlet input stream
    */
-  @Inject
   private ServletInputStream servletInputStream;
 
   /**
    * Ther linked list of active subscribers.
    */
-  private HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
+  private HashMap<Flow.Subscriber<? super ByteBuffer>, Flow.Subscription> subscribers;
 
   /**
    * Constructor
@@ -69,7 +69,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
    * Pushes subscriber to subscribers list.
    * @param subscriber
    */
-  @Override public void subscribe(Flow.Subscriber<? super Byte> subscriber) {
+  @Override public void subscribe(Flow.Subscriber<? super ByteBuffer> subscriber) {
 
     NoBackpressureSubscription subscription = new NoBackpressureSubscription(this);
 
@@ -116,26 +116,36 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
      */
     private final ServletInputStream servletInputStream;
 
-    private final HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
+    private final HashMap<Flow.Subscriber<? super ByteBuffer>, Flow.Subscription> subscribers;
+
+    private final byte[] readBuffer = new byte[1024];
+
+    private final ByteBuffer readByteBuffer = ByteBuffer.allocate(1024);
 
     /**
      * Constructor
      * @param servletInputStream ServletInputStream to read from.
      * @param subscribers
      */
-    public NoBackpressureReadListener(ServletInputStream servletInputStream, HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers) {
+    public NoBackpressureReadListener(ServletInputStream servletInputStream, HashMap<Flow.Subscriber<? super ByteBuffer>, Flow.Subscription> subscribers) {
       this.servletInputStream = servletInputStream;
       this.subscribers = subscribers;
     }
 
     @Override public void onDataAvailable() throws IOException {
+
       while(servletInputStream.isReady()) {
         try {
-          int readByte = servletInputStream.read();
-          if (readByte != -1) {
-            this.subscribers.keySet().forEach(subscriber -> {
-              subscriber.onNext((byte)readByte);
-            });
+          int bytesRead = servletInputStream.read(this.readBuffer);
+          if (bytesRead != -1) {
+            if (bytesRead > 0) {
+
+              this.readByteBuffer.put(this.readBuffer, 0, bytesRead);
+
+              this.subscribers.keySet().forEach(subscriber -> {
+                subscriber.onNext(this.readByteBuffer);
+              });
+            }
           }
           else
           {
