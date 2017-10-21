@@ -12,6 +12,10 @@
  */
 package de.openknowledge.jaxrs.reactive;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
+
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
@@ -26,7 +30,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.Flow;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Provider
 public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publisher<?>> {
@@ -50,36 +53,35 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
                                     MediaType mediaType,
                                     MultivaluedMap<String, String> multivaluedMap,
                                     InputStream inputStream) throws IOException, WebApplicationException {
-    Type targetType = ((ParameterizedType)type).getActualTypeArguments()[0];
+    Type targetType = ((ParameterizedType) type).getActualTypeArguments()[0];
 
     Class targetClass;
 
     // TODO throw exception should be onError
     if (targetType instanceof Class) {
-      targetClass = (Class)targetType;
+      targetClass = (Class) targetType;
     } else if (targetType instanceof ParameterizedType) {
-      targetClass = (Class)((ParameterizedType)targetType).getRawType();
+      targetClass = (Class) ((ParameterizedType) targetType).getRawType();
     } else {
       throw new IllegalArgumentException();
     }
 
-    // TODO should not rely on jackson implementation
+    ServletInputStream servletInputStream = request.getInputStream();
+
+    ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
+
+
+    JsonConverter jsonConverter = new JsonConverter();
+
+    publisherAdapter.subscribe(jsonConverter);
+
     ObjectMapper mapper = new ObjectMapper();
-
-//    MessageBodyReader<?> entityReader = providers.getMessageBodyReader(targetClass, targetType, annotations, mediaType);
-//    if (entityReader == null) {
-//      throw new IllegalArgumentException();
-//    }
-
-//    entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, new ByteArrayInputStream("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}".getBytes()));
 
     AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
       @Override
       protected Object process(String item) {
-        // TODO charset
         try {
           return mapper.reader().forType(targetClass).readValue(item);
-//          return entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, new ByteArrayInputStream(item.getBytes()));
         } catch (IOException e) {
           this.onError(e);
         }
@@ -88,18 +90,31 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       }
     };
 
-    // TODO use here the JsonConverter instead
-    new Thread(new Runnable() {
-      public void run() {
-        try {
-          Thread.sleep(1000);
-          processor.onNext("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}");
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      }
-    }).start();
+    jsonConverter.subscribe(processor);
 
     return processor;
+
+//    // TODO should not rely on jackson implementation
+//    ObjectMapper mapper = new ObjectMapper();
+//
+////    MessageBodyReader<?> entityReader = providers.getMessageBodyReader(targetClass, targetType, annotations, mediaType);
+////    if (entityReader == null) {
+////      throw new IllegalArgumentException();
+////    }
+//
+////    entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, new ByteArrayInputStream("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}".getBytes()));
+//
+//
+//    // TODO use here the JsonConverter instead
+//    new Thread(new Runnable() {
+//      public void run() {
+//        try {
+//          Thread.sleep(1000);
+//          processor.onNext("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}");
+//        } catch (InterruptedException e) {
+//          e.printStackTrace();
+//        }
+//      }
+//    }).start();
   }
 }

@@ -1,5 +1,7 @@
 package de.openknowledge.jaxrs.reactive.test;
 
+import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
+import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -10,11 +12,12 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.descriptor.api.Descriptors;
 import org.jboss.shrinkwrap.descriptor.api.webapp31.WebAppDescriptor;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URL;
@@ -32,8 +35,13 @@ public class CustomerBatchUploadTest {
 
   @Deployment
   public static WebArchive deployment() {
+    PomEquippedResolveStage pom = Maven.resolver().loadPomFromFile("pom.xml");
+
     return ShrinkWrap.create(WebArchive.class)
       .addPackage(Customer.class.getPackage())
+      .addPackage(JsonConverter.class.getPackage())
+      .addPackage(PublisherMessageBodyReader.class.getPackage())
+      .addAsLibraries(pom.resolve("de.undercouch:actson:1.2.0").withTransitivity().asFile())
       .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
         .addDefaultNamespaces()
         .version("3.1")
@@ -41,31 +49,45 @@ public class CustomerBatchUploadTest {
   }
 
   @Test
-  public void put(@ArquillianResource URL url) throws Exception {
+  public void synchronous(@ArquillianResource URL url) throws Exception {
 
     int amount = 100000;
 
-    List<Customer> randomCustomer = createRandomCustomers(amount);
+    List<Customer> customers = createRandomCustomers(amount);
 
     // Upload some Customers
-    Duration duration = time(() ->
-      ClientBuilder.newClient().target(url.toURI())
-        .path("customers")
-        .request()
-        .put(entity(randomCustomer, MediaType.APPLICATION_JSON_TYPE))
+    Duration duration = time(() -> {
+        Response response = ClientBuilder.newClient().target(url.toURI())
+          .path("customers")
+          .request()
+          .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
+        assertThat(response.getStatus()).isEqualTo(204);
+      }
+
     );
 
-    // Get the uploaded Customers
-    Response response = ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
-      .request(MediaType.APPLICATION_JSON)
-      .get();
+    System.out.println(String.format("**** synchronouse: Customers: %s, Duration: %s ms", amount, duration.toMillis()));
+  }
 
-    List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {
-    });
-    assertThat(customers.size()).isEqualTo(amount);
+  @Test
+  public void asynchronous(@ArquillianResource URL url) throws Exception {
 
-    System.out.println(String.format("**** Customers: %s, Duration: %s ms", amount, duration.toMillis()));
+    int amount = 3;
+    //int amount = 100000;
+
+    List<Customer> customers = createRandomCustomers(amount);
+
+    // Upload some Customers
+    Duration duration = time(() -> {
+        Response response = ClientBuilder.newClient().target(url.toURI())
+          .path("reactive/customers")
+          .request()
+          .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
+        assertThat(response.getStatus()).isEqualTo(204);
+      }
+    );
+
+    System.out.println(String.format("**** asynchronous: Customers: %s, Duration: %s ms", amount, duration.toMillis()));
   }
 
   private List<Customer> createRandomCustomers(int amount) {

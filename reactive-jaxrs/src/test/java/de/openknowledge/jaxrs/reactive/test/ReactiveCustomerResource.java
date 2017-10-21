@@ -21,14 +21,39 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 @ApplicationScoped
-@Path("/customers")
-public class CustomerResource {
+@Path("/reactive/customers")
+public class ReactiveCustomerResource {
 
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
-  public void setCustomers(List<Customer> customers) {
+  public void setCustomers(Flow.Publisher<Customer> customers) {
+    customers.subscribe(new Flow.Subscriber<Customer>() {
+
+      private int customerCount = 0;
+      @Override
+      public void onSubscribe(Flow.Subscription subscription) {
+        subscription.request(Long.MAX_VALUE);
+      }
+
+      @Override
+      public void onNext(Customer item) {
+        System.out.println("=====  Customer Count: " + customerCount);
+        customerCount++;
+      }
+
+      @Override
+      public void onError(Throwable throwable) {
+
+      }
+
+      @Override
+      public void onComplete() {
+        System.out.println("=====  Customer Count: " + customerCount);
+      }
+    });
   }
 
   @GET

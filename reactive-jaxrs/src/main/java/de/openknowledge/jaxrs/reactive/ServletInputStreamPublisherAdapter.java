@@ -49,8 +49,10 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
 
   /**
    * Constructor
+   * @param servletInputStream
    */
-  protected ServletInputStreamPublisherAdapter() {
+  protected ServletInputStreamPublisherAdapter(ServletInputStream servletInputStream) {
+    this.servletInputStream = servletInputStream;
     this.subscribers = new HashMap<>();
   }
 

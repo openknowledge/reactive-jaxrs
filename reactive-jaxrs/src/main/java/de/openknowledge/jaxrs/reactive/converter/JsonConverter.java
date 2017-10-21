@@ -23,7 +23,7 @@ import java.util.concurrent.Flow;
 /**
  * @author Robert Zilke - open knowledge GmbH
  */
-public class JsonConverter implements Flow.Processor<byte[], String> {
+public class JsonConverter implements Flow.Processor<Byte, String> {
 
   private final JsonParser jsonParser;
 
@@ -65,9 +65,11 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   }
 
   @Override
-  public void onNext(byte[] item) {
+  public void onNext(Byte item) {
 
-    handleNextBytes(item);
+    byte[] bytes = {item};
+
+    handleNextBytes(bytes);
   }
 
   @Override

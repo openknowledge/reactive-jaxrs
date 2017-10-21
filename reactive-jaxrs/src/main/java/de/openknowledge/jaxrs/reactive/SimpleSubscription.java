@@ -20,7 +20,7 @@ public class SimpleSubscription implements Flow.Subscription {
   @Override
   public void request(long n) {
     // TODO
-    throw new RuntimeException("Not yet implemented");
+    //throw new RuntimeException("Not yet implemented");
   }
 
   @Override
