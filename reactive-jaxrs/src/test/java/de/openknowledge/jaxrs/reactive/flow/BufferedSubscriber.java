@@ -3,7 +3,6 @@ package de.openknowledge.jaxrs.reactive.flow;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Flow;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -11,7 +10,6 @@ import java.util.stream.Collectors;
  * @param <T> Delegated type.
  */
 public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
-  private Consumer<T> onNextConsumer;
 
   private LinkedList<T> list;
 
@@ -35,19 +33,7 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
   }
 
   @Override public void onNext(T item) {
-    if (this.onNextConsumer != null) {
-      this.onNextConsumer.accept(item);
-    }
-
     this.list.push(item);
-  }
-
-  /**
-   * Adds an Consumer where Subscriber.onNext() delegates to.
-   * @param onNext
-   */
-  public void next(java.util.function.Consumer<T> onNext) {
-    this.onNextConsumer = onNext;
   }
 
   /**

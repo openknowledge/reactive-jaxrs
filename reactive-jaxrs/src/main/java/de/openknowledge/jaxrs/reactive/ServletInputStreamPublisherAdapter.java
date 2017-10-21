@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  *
  */
-public class ServletInputStreamPublisherAdapter extends SubmissionPublisher<Byte> {
+public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> {
 
   /**
    * The servlet input stream
@@ -45,7 +45,7 @@ public class ServletInputStreamPublisherAdapter extends SubmissionPublisher<Byte
   /**
    * Ther linked list of active subscribers.
    */
-  private HashMap<Flow.Subscriber, Flow.Subscription> subscribers;
+  private HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
 
   /**
    * Constructor
@@ -114,20 +114,28 @@ public class ServletInputStreamPublisherAdapter extends SubmissionPublisher<Byte
      */
     private final ServletInputStream servletInputStream;
 
-    private final HashMap<Flow.Subscriber, Flow.Subscription> subscribers;
+    private final HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
 
     /**
      * Constructor
      * @param servletInputStream ServletInputStream to read from.
      * @param subscribers
      */
-    public NoBackpressureReadListener(ServletInputStream servletInputStream, HashMap<Flow.Subscriber, Flow.Subscription> subscribers) {
+    public NoBackpressureReadListener(ServletInputStream servletInputStream, HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers) {
       this.servletInputStream = servletInputStream;
       this.subscribers = subscribers;
     }
 
     @Override public void onDataAvailable() throws IOException {
+      while(servletInputStream.isReady()) {
+        int readByte = servletInputStream.read();
+        if (readByte != -1) {
+          this.subscribers.keySet().forEach(subscriber -> {
 
+            subscriber.onNext((byte)readByte);
+          });
+        }
+      }
     }
 
     @Override public void onAllDataRead() throws IOException {
