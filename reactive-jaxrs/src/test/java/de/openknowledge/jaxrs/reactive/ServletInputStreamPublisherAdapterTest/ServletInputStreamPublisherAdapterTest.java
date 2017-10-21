@@ -67,13 +67,15 @@ public class ServletInputStreamPublisherAdapterTest {
       .thenReturn(false);
 
     servletInputStreamPublisherAdapter.startReading();
-
     servletInputStreamPublisherAdapter.subscribe(bufferedSubscriber);
 
     // inform about data availability
     answer.getArg().onDataAvailable();
 
     // asserts
-    Assert.assertThat(bufferedSubscriber.toList(), CoreMatchers.hasItem((byte)2));
+    List<Byte> receivedByteList = bufferedSubscriber.toList();
+    Assert.assertThat(receivedByteList.size(), CoreMatchers.equalTo(2));
+    Assert.assertThat(receivedByteList, CoreMatchers.hasItem((byte)2));
+    Assert.assertThat(receivedByteList, CoreMatchers.hasItem((byte)47));
   }
 }
