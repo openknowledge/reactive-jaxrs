@@ -13,6 +13,8 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
 
   private LinkedList<T> list;
 
+  private boolean completed = false;
+
   /**
    * Constructor.
    */
@@ -29,7 +31,7 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
   }
 
   @Override public void onComplete() {
-
+    this.completed = true;
   }
 
   @Override public void onNext(T item) {
@@ -42,5 +44,13 @@ public class BufferedSubscriber<T> implements Flow.Subscriber<T> {
    */
   public List<T> toList() {
     return this.list.stream().collect(Collectors.toList());
+  }
+
+  /**
+   * Returns true of completed has been called. False else.
+   * @return See description.
+   */
+  public boolean isCompleted() {
+    return completed;
   }
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Flow;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -77,5 +78,34 @@ public class ServletInputStreamPublisherAdapterTest {
     Assert.assertThat(receivedByteList.size(), CoreMatchers.equalTo(2));
     Assert.assertThat(receivedByteList, CoreMatchers.hasItem((byte)2));
     Assert.assertThat(receivedByteList, CoreMatchers.hasItem((byte)47));
+  }
+
+  @Test public void whenNoMoreDataAvailableOnCompletedCalled() throws Exception {
+
+    AnswerArg1<ReadListener> answer = new AnswerArg1<>();
+
+    BufferedSubscriber<Object> bufferedSubscriber = new BufferedSubscriber<>();
+
+    // mock setup
+    // receive setReadListener's argument
+    Mockito
+      .doAnswer(answer)
+      .when(servletInputStreamMock).setReadListener(Mockito.any(ReadListener.class));
+
+    // return one byte on ServletInputStream.read
+    when(servletInputStreamMock.read())
+      .thenReturn(-1);
+
+    when(servletInputStreamMock.isReady())
+      .thenReturn(true);
+
+    servletInputStreamPublisherAdapter.startReading();
+    servletInputStreamPublisherAdapter.subscribe(bufferedSubscriber);
+
+    // inform about data availability
+    answer.getArg().onDataAvailable();
+
+    // asserts
+    Assert.assertThat(bufferedSubscriber.isCompleted(), CoreMatchers.equalTo(true));
   }
 }

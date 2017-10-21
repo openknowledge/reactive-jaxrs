@@ -135,6 +135,14 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
             subscriber.onNext((byte)readByte);
           });
         }
+        else
+        {
+          this.subscribers.keySet().forEach(subscriber -> {
+            subscriber.onComplete();
+          });
+
+          break;
+        }
       }
     }
 
