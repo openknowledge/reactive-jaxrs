@@ -154,11 +154,15 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
     }
 
     @Override public void onAllDataRead() throws IOException {
-
+      this.subscribers.keySet().forEach(subscriber -> {
+        subscriber.onComplete();
+      });
     }
 
     @Override public void onError(Throwable t) {
-
+      this.subscribers.keySet().forEach(subscriber -> {
+        subscriber.onError(t);
+      });
     }
   }
 }
