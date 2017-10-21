@@ -1,10 +1,8 @@
 package de.openknowledge.jaxrs.reactive.ServletInputStreamPublisherAdapterTest;
 
-import de.openknowledge.jaxrs.reactive.AnswerArg1;
 import de.openknowledge.jaxrs.reactive.ServletInputStreamPublisherAdapter;
 import de.openknowledge.jaxrs.reactive.flow.BufferedSubscriber;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matcher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,11 +15,8 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Flow;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

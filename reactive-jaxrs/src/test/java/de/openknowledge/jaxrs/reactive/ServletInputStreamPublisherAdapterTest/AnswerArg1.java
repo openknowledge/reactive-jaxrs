@@ -1,4 +1,4 @@
-package de.openknowledge.jaxrs.reactive;
+package de.openknowledge.jaxrs.reactive.ServletInputStreamPublisherAdapterTest;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
