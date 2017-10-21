@@ -12,15 +12,31 @@
  */
 package de.openknowledge.jaxrs.reactive.test;
 
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+@ApplicationScoped
 @Path("/customers")
 public class CustomerResource {
 
-  @PUT
-  public void setCustomers(List<Customer> customers) {
+  private List<Customer> customers;
 
+  @PUT
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void setCustomers(List<Customer> customers) {
+    this.customers = customers;
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<Customer> getCustomers() {
+    return customers;
   }
 }

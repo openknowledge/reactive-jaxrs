@@ -12,10 +12,6 @@
  */
 package de.openknowledge.jaxrs.reactive.test;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import java.net.URISyntaxException;
-import java.net.URL;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -28,26 +24,53 @@ import org.jboss.shrinkwrap.descriptor.api.webapp31.WebAppDescriptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.List;
+
 import static javax.ws.rs.client.Entity.entity;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunAsClient
 @RunWith(Arquillian.class)
 public class CustomerTest {
+
   @Deployment
   public static WebArchive deployment() {
     return ShrinkWrap.create(WebArchive.class)
-            .addPackage(Customer.class.getPackage())
-            .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
-            .addDefaultNamespaces()
-            .version("3.1")
-            .exportAsString()));
+      .addPackage(Customer.class.getPackage())
+      .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
+        .addDefaultNamespaces()
+        .version("3.1")
+        .exportAsString()));
   }
 
   @Test
   public void put(@ArquillianResource URL url) throws URISyntaxException {
-    ClientBuilder.newClient()
-      .target(url.toURI()).path("customers")
+
+
+    ClientBuilder.newClient().target(url.toURI())
+      .path("customers")
       .request()
-      .put(entity("[{'firstName': 'Lustiger', 'lastName': 'Peter'}]", MediaType.APPLICATION_JSON_TYPE));
+      .put(entity("[{\"firstName\": \"Joe\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
+
+    Response response = ClientBuilder.newClient().target(url.toURI())
+      .path("customers")
+      .request(MediaType.APPLICATION_JSON)
+      .get();
+
+
+    List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
+
+    Customer customer = new Customer();
+    customer.setFirstName("Joe");
+    customer.setLastName("Doe");
+
+    assertThat(customers).isEqualTo(List.of(customer));
+
   }
 }
