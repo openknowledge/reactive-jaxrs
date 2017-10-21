@@ -19,9 +19,13 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
 @Path("/reactive/customers")
@@ -29,10 +33,9 @@ public class ReactiveCustomerResource {
 
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
-  public void setCustomers(Flow.Publisher<Customer> customers) {
+  public void setCustomers(Flow.Publisher<Customer> customers, @Suspended AsyncResponse response) {
     customers.subscribe(new Flow.Subscriber<Customer>() {
-
-      private int customerCount = 0;
+      private AtomicInteger customerCount = new AtomicInteger(0);
       @Override
       public void onSubscribe(Flow.Subscription subscription) {
         subscription.request(Long.MAX_VALUE);
@@ -40,8 +43,8 @@ public class ReactiveCustomerResource {
 
       @Override
       public void onNext(Customer item) {
-        System.out.println("=====  Customer Count: " + customerCount);
-        customerCount++;
+        customerCount.getAndIncrement();
+//        System.out.println("=====  Customer Count: " + customerCount.getAndIncrement());
       }
 
       @Override
@@ -51,7 +54,8 @@ public class ReactiveCustomerResource {
 
       @Override
       public void onComplete() {
-        System.out.println("=====  Customer Count: " + customerCount);
+        System.out.println("=====  Customer Count: " + customerCount.get());
+        response.resume(Response.noContent().build());
       }
     });
   }
@@ -59,6 +63,6 @@ public class ReactiveCustomerResource {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<Customer> getCustomers() {
-    return List.of(new Customer("Joe", "Doe "));
+    return List.of(new Customer(1, "Joe", "Doe "));
   }
 }

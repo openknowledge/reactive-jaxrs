@@ -13,7 +13,7 @@ public class CustomerRepositoryTest {
     CustomerRepository repository = new CustomerRepository();
     repository.initialize();
 
-    repository.save(asList(new Customer("John", "Doe"), new Customer("Jane", "Doe")));
+    repository.save(asList(new Customer(1, "John", "Doe"), new Customer(2, "Jane", "Doe")));
 
     Thread.sleep(10000);
 

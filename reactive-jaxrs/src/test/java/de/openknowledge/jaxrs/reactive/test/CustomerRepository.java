@@ -157,7 +157,7 @@ public class CustomerRepository {
     asList(customers.split("{")).stream().map(c -> c.substring(0, c.lastIndexOf('}'))).map(c -> c.split(",")).map(c -> {
       String firstName = c[0].substring(c[0].indexOf(':') + 1, c[0].length() - 1);
       String lastName = c[1].substring(c[1].indexOf(':') + 1, c[1].length() - 1);
-      return new Customer(firstName, lastName);
+      return new Customer(0, firstName, lastName);
     });
     return result;
   }

@@ -14,12 +14,14 @@ import org.jboss.shrinkwrap.descriptor.api.Descriptors;
 import org.jboss.shrinkwrap.descriptor.api.webapp31.WebAppDescriptor;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -32,6 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunAsClient
 @RunWith(Arquillian.class)
 public class CustomerBatchUploadTest {
+
+  @ArquillianResource private URL url;
 
   @Deployment
   public static WebArchive deployment() {
@@ -48,8 +52,13 @@ public class CustomerBatchUploadTest {
         .exportAsString()));
   }
 
+  @Before
+  public void warmUp() throws URISyntaxException {
+    ClientBuilder.newClient().target(url.toURI()).path("customers").request().get();
+  }
+
   @Test
-  public void synchronous(@ArquillianResource URL url) throws Exception {
+  public void synchronous() throws Exception {
 
     int amount = 100000;
 
@@ -70,10 +79,9 @@ public class CustomerBatchUploadTest {
   }
 
   @Test
-  public void asynchronous(@ArquillianResource URL url) throws Exception {
+  public void asynchronous() throws Exception {
 
-    int amount = 3;
-    //int amount = 100000;
+    int amount = 100000;
 
     List<Customer> customers = createRandomCustomers(amount);
 
@@ -93,13 +101,14 @@ public class CustomerBatchUploadTest {
   private List<Customer> createRandomCustomers(int amount) {
     List<Customer> list = new ArrayList<>(amount);
     for (int i = 0; i < amount; i++) {
-      list.add(createRandomCustomer());
+      list.add(createRandomCustomer(i));
     }
     return list;
   }
 
-  private Customer createRandomCustomer() {
+  private Customer createRandomCustomer(int id) {
     Customer customer = new Customer();
+    customer.setId(id);
     customer.setFirstName(createRandomString(15));
     customer.setLastName(createRandomString(15));
     return customer;

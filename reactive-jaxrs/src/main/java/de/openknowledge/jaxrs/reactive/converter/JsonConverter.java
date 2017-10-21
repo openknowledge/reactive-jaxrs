@@ -44,6 +44,8 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
   private Level nestedArrayLevel;
 
+  private Flow.Subscription subscription;
+
   /**
    * have to be a field for the case: first bytes contain first bytes of a json object following bytes contain the rest
    */
@@ -69,7 +71,7 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   // Subscriber
   @Override
   public void onSubscribe(Flow.Subscription subscription) {
-
+    this.subscription = subscription;
     // later for back pressing
   }
 
@@ -77,6 +79,8 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   public void onNext(byte[] item) {
 
     handleNextBytes(item);
+
+    this.subscription.request(1);
   }
 
   @Override

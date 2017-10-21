@@ -29,11 +29,12 @@ public class CustomerResource {
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
   public void setCustomers(List<Customer> customers) {
+    System.out.println(customers.size());
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<Customer> getCustomers() {
-    return List.of(new Customer("Joe", "Doe "));
+    return List.of(new Customer(1, "Joe", "Doe "));
   }
 }
