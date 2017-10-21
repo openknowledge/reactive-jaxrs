@@ -34,8 +34,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jboss.version>10.1.0.Final</jboss.version>
-    <maven.compiler.target>1.9</maven.compiler.target>
-    <maven.compiler.source>1.9</maven.compiler.source>
+    <maven.compiler.target>9</maven.compiler.target>
+    <maven.compiler.source>9</maven.compiler.source>
     <argLine>${jacoco.agent}</argLine>
   </properties>
 
@@ -55,7 +55,6 @@
     <dependency>
       <groupId>javax.enterprise</groupId>
       <artifactId>cdi-api</artifactId>
-      <version>1.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -118,8 +117,6 @@
       <artifactId>httpclient</artifactId>
       <version>4.3.6</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
     </dependency>
   </dependencies>
   <build>
