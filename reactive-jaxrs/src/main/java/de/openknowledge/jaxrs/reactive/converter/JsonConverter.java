@@ -49,7 +49,7 @@ public class JsonConverter implements Flow.Processor<Byte, String> {
   public JsonConverter() {
 
     jsonParser = new JsonParser(new DefaultJsonFeeder(StandardCharsets.UTF_8));
-    byteBuffer = new byte[1024];
+    byteBuffer = new byte[2048];
   }
 
   // Publisher
