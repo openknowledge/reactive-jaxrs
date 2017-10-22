@@ -13,17 +13,15 @@
 
 package de.openknowledge.jaxrs.reactive;
 
-import javax.inject.Inject;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Flow;
-import java.util.concurrent.SubmissionPublisher;
-import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 
 /**
  * Reactive implementation of an Java 9 flow API's Publisher to observe ServletInputStream
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
  * @version 1.0
  *
  */
-public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> {
+public class ServletInputStreamPublisherAdapter implements Flow.Publisher<byte[]> {
 
   private boolean started = false;
 
@@ -47,7 +45,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
   /**
    * Ther linked list of active subscribers.
    */
-  private HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
+  private Map<Flow.Subscriber<? super byte[]>, Flow.Subscription> subscribers;
 
   /**
    * Constructor
@@ -62,7 +60,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
    * Starts asynchronous reading from ServletInputStream.
    */
   public void startReading() {
-    NoBackpressureReadListener readListener = new NoBackpressureReadListener(this.servletInputStream, this.subscribers);
+    NoBackpressureReadListener readListener = new NoBackpressureReadListener(servletInputStream, subscribers);
 
     this.servletInputStream.setReadListener(readListener);
   }
@@ -71,7 +69,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
    * Pushes subscriber to subscribers list.
    * @param subscriber
    */
-  @Override public void subscribe(Flow.Subscriber<? super Byte> subscriber) {
+  @Override public void subscribe(Flow.Subscriber<? super byte[]> subscriber) {
     if (!started) {
       startReading();
     }
@@ -120,15 +118,17 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
      * ServletInputStream to read available data from.
      */
     private final ServletInputStream servletInputStream;
+    
+    private final byte[] buffer = new byte[1024];
 
-    private final HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers;
+    private final Map<Flow.Subscriber<? super byte[]>, Flow.Subscription> subscribers;
 
     /**
      * Constructor
      * @param servletInputStream ServletInputStream to read from.
      * @param subscribers
      */
-    public NoBackpressureReadListener(ServletInputStream servletInputStream, HashMap<Flow.Subscriber<? super Byte>, Flow.Subscription> subscribers) {
+    public NoBackpressureReadListener(ServletInputStream servletInputStream, Map<Flow.Subscriber<? super byte[]>, Flow.Subscription> subscribers) {
       this.servletInputStream = servletInputStream;
       this.subscribers = subscribers;
     }
@@ -136,16 +136,19 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<Byte> 
     @Override public void onDataAvailable() throws IOException {
       while(servletInputStream.isReady()) {
         try {
-          int readByte = servletInputStream.read();
-          if (readByte != -1) {
-            this.subscribers.keySet().forEach(subscriber -> {
-              subscriber.onNext((byte)readByte);
-            });
-          }
-          else
-          {
+          int readBytes = servletInputStream.read(buffer);
+          if (readBytes == -1) {
             fireOnCompleted();
             break;
+          } else if (readBytes < buffer.length) {
+            byte[] chunk = Arrays.copyOf(buffer, readBytes);
+            this.subscribers.keySet().forEach(subscriber -> {
+              subscriber.onNext(chunk);
+            });
+          } else {
+            this.subscribers.keySet().forEach(subscriber -> {
+              subscriber.onNext(buffer);
+            });
           }
         } catch (IOException e) {
           fireOnError(e);
