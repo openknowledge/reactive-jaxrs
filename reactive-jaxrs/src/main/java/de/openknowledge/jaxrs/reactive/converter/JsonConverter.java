@@ -71,6 +71,7 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   // Subscriber
   @Override
   public void onSubscribe(Flow.Subscription subscription) {
+
     this.subscription = subscription;
     // later for back pressing
   }
@@ -85,6 +86,7 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
   @Override
   public void onError(Throwable throwable) {
+
     subscriber.onError(throwable);
   }
 
@@ -157,14 +159,14 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
     byte[] bufferedBytes = getBytesInBuffer();
 
-    int start = startOfObjectIndex - parsedCharactersOffset - 1;
-    int end = endOfObjectIndex - parsedCharactersOffset;
+    int startIndexInBuffer = startOfObjectIndex - parsedCharactersOffset - 1;
+    int endIndexInBuffer = endOfObjectIndex - parsedCharactersOffset;
 
-    byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, start, end);
+    byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, startIndexInBuffer, endIndexInBuffer);
     subscriber.onNext(new String(parsedObjectBytes));
-    // System.out.println("Object: " + new String(parsedObjectBytes));
 
-    removeBytesFromBuffer(parsedObjectBytes.length);
+    // remove json string of found object
+    removeBytesFromBuffer(endIndexInBuffer);
   }
 
   private byte[] getBytesInBuffer() {
@@ -185,10 +187,10 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
    */
   private void removeBytesFromBuffer(int n) {
 
-    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n + 1, byteBufferPosition);
+    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n, byteBufferPosition);
     byteBufferPosition = 0;
     addToByteBuffer(validBytes);
-
-    parsedCharactersOffset += n + 1;
+    // bytes after byteBufferPosition will be ignored, they just stay where they are
+    parsedCharactersOffset += n;
   }
 }

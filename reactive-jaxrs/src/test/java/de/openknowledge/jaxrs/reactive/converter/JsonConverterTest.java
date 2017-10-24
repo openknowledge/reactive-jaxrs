@@ -5,10 +5,12 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 /**
  * @author Robert Zilke - open knowledge GmbH
@@ -22,6 +24,7 @@ public class JsonConverterTest {
       throws Exception {
 
     jsonConverter = new JsonConverter();
+    jsonConverter.onSubscribe(Mockito.mock(Flow.Subscription.class));
   }
 
   @Test
@@ -87,13 +90,16 @@ public class JsonConverterTest {
     jsonConverter.onNext("is\",\"lastName\":\"Pres".getBytes(StandardCharsets.UTF_8));
     jsonConverter.onNext("ley\"},{\"firstName\":\"Pe".getBytes(StandardCharsets.UTF_8));
     jsonConverter.onNext("ter\",\"lastName\":\"Lus".getBytes(StandardCharsets.UTF_8));
-    jsonConverter.onNext("tig\"}]".getBytes(StandardCharsets.UTF_8));
+    jsonConverter.onNext("tig\"},".getBytes(StandardCharsets.UTF_8));
+    jsonConverter.onNext("{\"firstName\":\"Biene\",\"lastName\":\"Maia\"}".getBytes(StandardCharsets.UTF_8));
+    jsonConverter.onNext("]".getBytes(StandardCharsets.UTF_8));
     jsonConverter.onComplete();
 
-    assertEquals(2, items.size());
+    assertEquals(3, items.size());
 
     assertEquals("{\"firstName\":\"Elvis\",\"lastName\":\"Presley\"}", items.get(0));
     assertEquals("{\"firstName\":\"Peter\",\"lastName\":\"Lustig\"}", items.get(1));
+    assertEquals("{\"firstName\":\"Biene\",\"lastName\":\"Maia\"}", items.get(2));
 
     assertTrue(onCompleteInvoked[0]);
   }
