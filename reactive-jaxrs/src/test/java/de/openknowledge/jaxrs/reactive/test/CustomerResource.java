@@ -35,6 +35,6 @@ public class CustomerResource {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<Customer> getCustomers() {
-    return List.of(new Customer(1, "Joe", "Doe "));
+    return List.of(new Customer("Joe", "Doe "));
   }
 }

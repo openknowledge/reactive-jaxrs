@@ -12,7 +12,6 @@
  */
 package de.openknowledge.jaxrs.reactive.test;
 
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -63,6 +62,6 @@ public class ReactiveCustomerResource {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<Customer> getCustomers() {
-    return List.of(new Customer(1, "Joe", "Doe "));
+    return List.of(new Customer("Joe", "Doe "));
   }
 }
