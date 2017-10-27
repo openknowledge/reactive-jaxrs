@@ -13,6 +13,7 @@
 package de.openknowledge.jaxrs.reactive;
 
 import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
+import de.openknowledge.jaxrs.reactive.flow.AbstractSimpleProcessor;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;

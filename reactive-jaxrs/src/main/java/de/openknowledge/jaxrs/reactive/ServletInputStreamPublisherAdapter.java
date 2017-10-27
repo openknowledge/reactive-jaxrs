@@ -39,7 +39,6 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<byte[]
   /**
    * The servlet input stream
    */
-  @Inject
   private ServletInputStream servletInputStream;
 
   /**
