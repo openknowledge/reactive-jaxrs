@@ -224,7 +224,7 @@ public class CustomerRepository {
     private int outstanding = 0;
 
     public boolean isCompleted() {
-      return completed;
+      return !hasOutstanding() && completed;
     }
 
     public boolean hasOutstanding() {
