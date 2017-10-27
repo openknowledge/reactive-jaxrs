@@ -144,7 +144,7 @@ public class CustomerRepository {
                     writeSemaphore.release();
                     offset.addAndGet(size);
                     resultCount.incrementAndGet();
-                    subscription.request(1);                  
+                    subscription.request(1);
                   }));
             }).andThen(() -> {
               writeSemaphore.acquireUninterruptibly();
@@ -171,6 +171,29 @@ public class CustomerRepository {
       String lastName = c[1].substring(c[1].indexOf(':') + 3, c[1].length() - 1);
       return new Customer(firstName, lastName);
     }).collect(toList());
+  }
+
+  public Publisher<Customer> findAllAsync() throws IOException {
+    String customers = IOUtils.toString(new FileReader("customers.json")).trim();
+    final String customerData = customers.substring(1, customers.length() - 1);
+
+    return new Publisher<Customer>() {
+      @Override
+      public void subscribe(Subscriber<? super Customer> subscriber) {
+        asList(customerData.split("\\{"))
+          .stream()
+          .filter(s -> !s.isEmpty())
+          .map(c -> c.substring(0, c.lastIndexOf('}')))
+          .map(c -> c.split(","))
+          .map(c -> {
+            String firstName = c[0].substring(c[0].indexOf(':') + 3, c[0].length() - 1);
+            String lastName = c[1].substring(c[1].indexOf(':') + 3, c[1].length() - 1);
+            return new Customer(firstName, lastName);
+          })
+          .forEach(subscriber::onNext);
+        subscriber.onComplete();
+      }
+    };
   }
 
   public static <V, A> CompletionHandler<V, SingleItemPublisher<A>> andThen(BiConsumer<V, SingleItemPublisher<A>> consumer) {

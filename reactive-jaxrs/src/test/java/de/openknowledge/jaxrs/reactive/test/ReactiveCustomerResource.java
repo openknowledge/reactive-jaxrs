@@ -13,6 +13,7 @@
 package de.openknowledge.jaxrs.reactive.test;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
@@ -22,46 +23,48 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.List;
+import java.io.IOException;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
 @Path("/reactive/customers")
 public class ReactiveCustomerResource {
 
+  @Inject
+  private CustomerRepository repository;
+
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
-  public void setCustomers(Flow.Publisher<Customer> customers, @Suspended AsyncResponse response) {
-    customers.subscribe(new Flow.Subscriber<Customer>() {
-      private AtomicInteger customerCount = new AtomicInteger(0);
-      @Override
-      public void onSubscribe(Flow.Subscription subscription) {
-        subscription.request(Long.MAX_VALUE);
-      }
+  public void setCustomers(Flow.Publisher<Customer> customers, @Suspended AsyncResponse response) throws IOException {
+    repository
+      .save(customers)
+      .subscribe(new Flow.Subscriber<>() {
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+          subscription.request(Long.MAX_VALUE);
+        }
 
-      @Override
-      public void onNext(Customer item) {
-        customerCount.getAndIncrement();
-//        System.out.println("=====  Customer Count: " + customerCount.getAndIncrement());
-      }
+        @Override
+        public void onNext(Integer item) {
+          System.out.println("=====  Customer Count: " + item);
+        }
 
-      @Override
-      public void onError(Throwable throwable) {
+        @Override
+        public void onError(Throwable throwable) {
 
-      }
+        }
 
-      @Override
-      public void onComplete() {
-        System.out.println("=====  Customer Count: " + customerCount.get());
-        response.resume(Response.noContent().build());
-      }
-    });
+        @Override
+        public void onComplete() {
+          System.out.println("=====  Completed ");
+          response.resume(Response.noContent().build());
+        }
+      });
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<Customer> getCustomers() {
-    return List.of(new Customer("Joe", "Doe "));
+  public Flow.Publisher<Customer> getCustomers() throws IOException {
+    return repository.findAllAsync();
   }
 }
