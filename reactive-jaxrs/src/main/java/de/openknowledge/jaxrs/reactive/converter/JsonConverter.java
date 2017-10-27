@@ -40,6 +40,8 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
   private Flow.Subscription subscription;
 
+  private boolean producerCompleted = false;
+
   /**
    * have to be a field for the case: first bytes contain first bytes of a json object following bytes contain the rest
    */
@@ -76,14 +78,15 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
   @Override
   public void onError(Throwable throwable) {
-
+    subscriber.onError(throwable);
   }
 
   @Override
   public void onComplete() {
+    producerCompleted = true;
 
     // todo: be sure to consume last bytes
-    subscriber.onComplete();
+    // todo what to do if producer told us it has finished, but we need more bytes?
   }
 
   private void handleNextBytes(byte[] jsonBytes) {
