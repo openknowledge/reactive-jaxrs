@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,6 +72,8 @@ public class CustomerRepository {
 
       @Override
       public void subscribe(Subscriber<? super Customer> s) {
+        // semaphore to prevent calling onComplete multiple times from different threads
+        Semaphore completionSemaphore = new Semaphore(1);
         subscriber = s;
         subscriber.onSubscribe(new Subscription() {
 
@@ -85,8 +88,12 @@ public class CustomerRepository {
               }
             }
             if (customers.isEmpty()) {
-              subscriber.onComplete();
-              subscriber = null;
+              completionSemaphore.acquireUninterruptibly();
+              if (subscriber != null) {
+                subscriber.onComplete();
+                subscriber = null;
+                completionSemaphore.release();
+              }
             }
           }
 
@@ -119,42 +126,31 @@ public class CustomerRepository {
 
   public Publisher<Integer> save(Publisher<Customer> customers) throws IOException {
     AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
-    AtomicReference<WriteState> writeState = new AtomicReference<>(new WriteState());
     AtomicLong offset = new AtomicLong(0);
     AtomicInteger resultCount = new AtomicInteger(0);
-    writeState.updateAndGet(increment());
     SingleItemPublisher<Integer> resultPublisher = new SingleItemPublisher<>();
+    Semaphore writeSemaphore = new Semaphore(1);
+    writeSemaphore.acquireUninterruptibly();
     fileChannel.write(ByteBuffer.wrap("[".getBytes()), 0, resultPublisher,
         andThen((count, s) -> {
-          writeState.updateAndGet(decrement());
+          writeSemaphore.release();
           customers.subscribe(pullEach((Customer customer, Subscription subscription) -> {
               String json = String.format("%s{\"firstName\": \"%s\", \"lastName\": \"%s\"}", offset.longValue() == 0 ? "" : ",",
                   customer.getFirstName(), customer.getLastName());
               offset.addAndGet(count);
-              writeState.updateAndGet(increment());
-              System.out.println("write " + json + " at offset " + offset.get());
+              writeSemaphore.acquireUninterruptibly();
               fileChannel.write(ByteBuffer.wrap(json.getBytes()), offset.get(), resultPublisher,
                   andThen((size, c) -> {
-                    WriteState state = writeState.updateAndGet(decrement());
+                    writeSemaphore.release();
                     offset.addAndGet(size);
                     resultCount.incrementAndGet();
-                    if (state.isCompleted()) {
-                      fileChannel.write(ByteBuffer.wrap("]".getBytes()), offset.get(), resultPublisher,
-                          andThen((d, sub) -> {
-                            try {
-                              fileChannel.close();
-                              resultPublisher.publish(resultCount.intValue());
-                            } catch (Exception error) {
-                              resultPublisher.publish(error);
-                            }
-                          }));
-                    }
                     subscription.request(1);                  
                   }));
             }).andThen(() -> {
-              if (!writeState.updateAndGet(complete()).hasOutstanding()) {
+              writeSemaphore.acquireUninterruptibly();
                 fileChannel.write(ByteBuffer.wrap("]".getBytes()), offset.longValue(), resultPublisher,
                     andThen((d, e) -> {
+                      writeSemaphore.release();
                       try {
                         fileChannel.close();
                         resultPublisher.publish(resultCount.intValue());
@@ -162,7 +158,6 @@ public class CustomerRepository {
                         resultPublisher.publish(error);
                       }
                     }));
-              }
             }).exceptionally(error -> resultPublisher.publish(error)));
         }));
     return resultPublisher;
@@ -193,63 +188,11 @@ public class CustomerRepository {
     };
   }
 
-  private static UnaryOperator<WriteState> increment() {
-    return w -> {
-      return w.increment();
-    };
-  }
-
-  private static UnaryOperator<WriteState> decrement() {
-    return w -> {
-      return w.decrement();
-    };
-  }
-
-  private static UnaryOperator<WriteState> complete() {
-    return w -> {
-      return w.complete();
-    };
-  }
-
   private static int throwException(Throwable t) throws Exception {
     if (t instanceof Error) {
       throw (Error)t;
     } else {
       throw (Exception)t;
-    }
-  }
-
-  private static class WriteState {
-    private boolean completed = false;
-    private int outstanding = 0;
-
-    public boolean isCompleted() {
-      return !hasOutstanding() && completed;
-    }
-
-    public boolean hasOutstanding() {
-      return outstanding > 0;
-    }
-
-    public WriteState increment() {
-      WriteState newState = new WriteState();
-      newState.outstanding = outstanding + 1;
-      newState.completed = completed;
-      return newState;
-    }
-
-    public WriteState decrement() {
-      WriteState newState = new WriteState();
-      newState.outstanding = outstanding - 1;
-      newState.completed = completed;
-      return newState;
-    }
-
-    public WriteState complete() {
-      WriteState newState = new WriteState();
-      newState.outstanding = outstanding;
-      newState.completed = true;
-      return newState;
     }
   }
 }
