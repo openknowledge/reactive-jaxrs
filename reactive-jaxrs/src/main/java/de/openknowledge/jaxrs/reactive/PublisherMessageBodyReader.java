@@ -12,7 +12,6 @@
  */
 package de.openknowledge.jaxrs.reactive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
 
 import javax.servlet.ServletInputStream;
@@ -30,6 +29,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.Flow;
+import org.apache.commons.io.IOUtils;
 
 @Provider
 public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publisher<?>> {
@@ -66,64 +66,45 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       throw new IllegalArgumentException();
     }
 
-    return new Flow.Publisher<>() {
-      @Override
-      public void subscribe(Flow.Subscriber<? super Object> subscriber) {
-        ServletInputStream servletInputStream = null;
-        try {
-          servletInputStream = request.getInputStream();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    final MessageBodyReader<?> entityReader = providers.getMessageBodyReader(targetClass, targetType, annotations, mediaType);
+    if (entityReader == null) {
+      throw new IllegalArgumentException();
+    }
 
-        ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
+    // TODO is it really necessary? next readFrom is otherwise blocking, wtf?!
+    entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, IOUtils.toInputStream(""));
 
-        JsonConverter jsonConverter = new JsonConverter();
-
-        publisherAdapter.subscribe(jsonConverter);
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
-          @Override
-          protected Object process(String item) {
-            try {
-              return mapper.reader().forType(targetClass).readValue(item);
-            } catch (IOException e) {
-              this.onError(e);
-            }
-
-            return null;
-          }
-        };
-
-        jsonConverter.subscribe(processor);
-
-        processor.subscribe(subscriber);
+    return (Flow.Publisher<Object>)subscriber -> {
+      ServletInputStream servletInputStream = null;
+      try {
+        servletInputStream = request.getInputStream();
+      } catch (IOException e) {
+        // TODO
+        e.printStackTrace();
       }
-    };
 
-//    // TODO should not rely on jackson implementation
-//    ObjectMapper mapper = new ObjectMapper();
-//
-////    MessageBodyReader<?> entityReader = providers.getMessageBodyReader(targetClass, targetType, annotations, mediaType);
-////    if (entityReader == null) {
-////      throw new IllegalArgumentException();
-////    }
-//
-////    entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, new ByteArrayInputStream("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}".getBytes()));
-//
-//
-//    // TODO use here the JsonConverter instead
-//    new Thread(new Runnable() {
-//      public void run() {
-//        try {
-//          Thread.sleep(1000);
-//          processor.onNext("{\"firstName\": \"Lustiger\", \"lastName\": \"Peter\"}");
-//        } catch (InterruptedException e) {
-//          e.printStackTrace();
-//        }
-//      }
-//    }).start();
+      ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
+
+      JsonConverter jsonConverter = new JsonConverter();
+
+      publisherAdapter.subscribe(jsonConverter);
+
+      AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
+        @Override
+        protected Object process(String item) {
+          try {
+            return entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, IOUtils.toInputStream(item));
+          } catch (IOException e) {
+            onError(e);
+          }
+
+          return null;
+        }
+      };
+
+      jsonConverter.subscribe(processor);
+
+      processor.subscribe(subscriber);
+    };
   }
 }
