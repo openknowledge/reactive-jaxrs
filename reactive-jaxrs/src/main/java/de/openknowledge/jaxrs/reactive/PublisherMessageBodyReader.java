@@ -74,16 +74,20 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
     // TODO is it really necessary? next readFrom is otherwise blocking, wtf?!
     entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, IOUtils.toInputStream(""));
 
-    return (Flow.Publisher<Object>)subscriber -> {
-      ServletInputStream servletInputStream = null;
-      try {
-        servletInputStream = request.getInputStream();
-      } catch (IOException e) {
-        // TODO
-        e.printStackTrace();
-      }
+    ServletInputStream servletInputStream = null;
+    try {
+      servletInputStream = request.getInputStream();
+    } catch (IOException e) {
+      // TODO
+      e.printStackTrace();
+    }
+    if (servletInputStream == null) {
+      throw new IllegalArgumentException();
+    }
 
-      ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(servletInputStream);
+    final ServletInputStream finalServletInputStream = servletInputStream;
+    return (Flow.Publisher<Object>)subscriber -> {
+      ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(finalServletInputStream);
 
       JsonConverter jsonConverter = new JsonConverter();
 
