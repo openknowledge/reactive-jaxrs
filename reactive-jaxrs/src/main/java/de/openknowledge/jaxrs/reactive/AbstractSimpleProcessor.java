@@ -65,12 +65,13 @@ public abstract class AbstractSimpleProcessor<T, R> implements Flow.Processor<T,
     if (childSubscriber != null) {
       childSubscriber.onComplete();
     }
+
+    cleanup();
   }
 
   private void cleanup() {
     childSubscriber = null;
     childSubscription = null;
-
   }
 
   protected abstract R process(T item);
