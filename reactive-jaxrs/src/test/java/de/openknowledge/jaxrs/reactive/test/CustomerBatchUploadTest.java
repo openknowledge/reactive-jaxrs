@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URISyntaxException;
@@ -43,6 +44,7 @@ import java.util.List;
 
 import static de.openknowledge.jaxrs.reactive.test.StopWatch.time;
 import static javax.ws.rs.client.Entity.entity;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunAsClient
@@ -71,7 +73,7 @@ public class CustomerBatchUploadTest {
   }
 
   @Before
-  public void warmUp() throws URISyntaxException {
+  public void warmUpAndClear() throws URISyntaxException {
     ClientBuilder.newClient().target(url.toURI()).path("customers").request().get();
   }
 
@@ -88,9 +90,9 @@ public class CustomerBatchUploadTest {
           .path("customers")
           .request()
           .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
-        assertThat(response.getStatus()).isEqualTo(204);
+        assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
+        assertThat(amount).isEqualTo(extractCount(response));
       }
-
     );
 
     System.out.println(String.format("**** synchronouse: Customers: %s, Duration: %s ms", amount, duration.toMillis()));
@@ -109,11 +111,16 @@ public class CustomerBatchUploadTest {
           .path("reactive/customers")
           .request()
           .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
-        assertThat(response.getStatus()).isEqualTo(204);
+        assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
+        assertThat(amount).isEqualTo(extractCount(response));
       }
     );
 
     System.out.println(String.format("**** asynchronous: Customers: %s, Duration: %s ms", amount, duration.toMillis()));
+  }
+
+  private Integer extractCount(Response response) {
+    return response.readEntity(new GenericType<Integer>(){});
   }
 
   private List<Customer> createRandomCustomers(int amount) {

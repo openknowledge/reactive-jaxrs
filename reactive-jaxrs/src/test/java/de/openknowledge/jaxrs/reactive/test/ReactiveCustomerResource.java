@@ -39,6 +39,8 @@ public class ReactiveCustomerResource {
     repository
       .save(customers)
       .subscribe(new Flow.Subscriber<>() {
+        private int count = 0;
+
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
           subscription.request(Long.MAX_VALUE);
@@ -47,6 +49,7 @@ public class ReactiveCustomerResource {
         @Override
         public void onNext(Integer item) {
           System.out.println("=====  Customer Count: " + item);
+          count = item;
         }
 
         @Override
@@ -57,7 +60,7 @@ public class ReactiveCustomerResource {
         @Override
         public void onComplete() {
           System.out.println("=====  Completed ");
-          response.resume(Response.noContent().build());
+          response.resume(Response.ok(count).build());
         }
       });
   }

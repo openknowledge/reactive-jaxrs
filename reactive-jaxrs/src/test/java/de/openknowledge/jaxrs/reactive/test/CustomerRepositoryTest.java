@@ -26,7 +26,7 @@ public class CustomerRepositoryTest {
 
     int count = repository.save(asList(new Customer("John", "Doe"), new Customer("Jane", "Doe")));
     assertThat(count).isEqualTo(2);
-    
+
     assertThat(repository.findAll()).containsExactly(new Customer("John", "Doe"), new Customer("Jane", "Doe"));
   }
 }
