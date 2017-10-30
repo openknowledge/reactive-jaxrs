@@ -72,6 +72,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<byte[]
   @Override public void subscribe(Flow.Subscriber<? super byte[]> subscriber) {
     if (!started) {
       startReading();
+      started = true;
     }
 
     NoBackpressureSubscription subscription = new NoBackpressureSubscription(this);
@@ -118,7 +119,7 @@ public class ServletInputStreamPublisherAdapter implements Flow.Publisher<byte[]
      * ServletInputStream to read available data from.
      */
     private final ServletInputStream servletInputStream;
-    
+
     private final byte[] buffer = new byte[1024];
 
     private final Map<Flow.Subscriber<? super byte[]>, Flow.Subscription> subscribers;
