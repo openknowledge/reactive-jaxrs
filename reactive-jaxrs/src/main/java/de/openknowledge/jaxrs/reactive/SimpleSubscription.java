@@ -14,12 +14,10 @@ package de.openknowledge.jaxrs.reactive;
 
 import java.util.concurrent.Flow;
 
-/**
- * @author Christian Schulz - open knowledge GmbH
- */
 public class SimpleSubscription implements Flow.Subscription {
 
   private Flow.Subscription parentSubscription;
+  private boolean canceled = false;
 
   public SimpleSubscription() {
     this(null);
@@ -31,12 +29,15 @@ public class SimpleSubscription implements Flow.Subscription {
 
   @Override
   public void request(long n) {
-    // TODO
-    //throw new RuntimeException("Not yet implemented");
+    if (this.parentSubscription != null && !canceled) {
+      parentSubscription.request(n);
+    }
   }
 
   @Override
   public void cancel() {
+    canceled = true;
+
     if (this.parentSubscription != null) {
       this.parentSubscription.cancel();
     }
