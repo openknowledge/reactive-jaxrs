@@ -19,25 +19,24 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+import javax.ws.rs.ext.Providers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.Flow;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static de.openknowledge.jaxrs.reactive.Utils.extractClassFromType;
+import static de.openknowledge.jaxrs.reactive.Utils.extractGenericTypeFromInterface;
 
 @Provider
 public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publisher<?>> {
 
-  private ObjectMapper mapper;
-
   @Context
   private HttpServletResponse response;
 
-  public PublisherMessageBodyWriter() {
-    mapper = new ObjectMapper();
-  }
+  @Context
+  private Providers providers;
 
   @Override
   public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -52,21 +51,13 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
 
   @Override
   public void writeTo(Flow.Publisher<?> publisher, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-    if (response.getOutputStream() instanceof StreamServletFilter.WrappedServletOutputStream) {
-      ((StreamServletFilter.WrappedServletOutputStream)response.getOutputStream()).delayClose();
-    } else {
-      throw new IllegalStateException("OutputStream is not wrapped! Servlet Filter not registered?");
-    }
+    NonClosableOutputStream outputStream = new NonClosableOutputStream(entityStream);
 
-    Type targetType = ((ParameterizedType)genericType).getActualTypeArguments()[0];
+    Type targetType = extractGenericTypeFromInterface(type, Flow.Publisher.class);
+    Class targetClass = extractClassFromType(targetType);
 
-    Class targetClass;
-
-    if (targetType instanceof Class) {
-      targetClass = (Class)targetType;
-    } else if (targetType instanceof ParameterizedType) {
-      targetClass = (Class)((ParameterizedType)targetType).getRawType();
-    } else {
+    MessageBodyWriter entityWriter = providers.getMessageBodyWriter(targetClass, targetType, annotations, mediaType);
+    if (entityWriter == null) {
       throw new IllegalArgumentException();
     }
 
@@ -79,7 +70,8 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
       @Override
       public void onNext(Object item) {
         try {
-          mapper.writer().forType(targetClass).writeValue(entityStream, item);
+          entityWriter.writeTo(item, targetClass, targetClass, annotations, mediaType, httpHeaders, outputStream);
+          outputStream.flush();
         } catch (IOException e) {
           // TODO
           e.printStackTrace();
@@ -89,11 +81,16 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
       @Override
       public void onError(Throwable throwable) {
         // TODO
+        throwable.printStackTrace();
       }
 
       @Override
       public void onComplete() {
-        // does nothing
+        try {
+          outputStream.closeAsync();
+        } catch (IOException e) {
+          // we are finished, ignoring errors
+        }
       }
     });
   }
