@@ -57,6 +57,7 @@ public class CustomerRepository {
       if (!Files.exists(path)) {
         Files.createFile(path);
       }
+      Files.write(path, "[]".getBytes());
     } catch (IOException e) {
       e.printStackTrace();
     }

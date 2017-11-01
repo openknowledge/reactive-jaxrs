@@ -37,6 +37,7 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
 
 @RunAsClient
 @RunWith(Arquillian.class)
@@ -46,8 +47,9 @@ public class CustomerTest {
   public static WebArchive deployment() {
     PomEquippedResolveStage pom = Maven.resolver().loadPomFromFile("pom.xml");
     return ShrinkWrap.create(WebArchive.class)
+      .addPackage(SingleItemPublisher.class.getPackage())
       .addPackage(Customer.class.getPackage())
-      .addAsLibraries(pom.resolve("org.apache.commons:commons-io:2.4").withTransitivity().asFile())
+      .addAsLibraries(pom.resolve("commons-io:commons-io").withTransitivity().asFile())
       .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
         .addDefaultNamespaces()
         .version("3.1")
