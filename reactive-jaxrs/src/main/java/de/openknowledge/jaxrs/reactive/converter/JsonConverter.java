@@ -25,7 +25,7 @@ import java.util.concurrent.Flow;
  */
 public class JsonConverter implements Flow.Processor<byte[], String> {
 
-  private final JsonParser jsonParser;
+  private JsonParser jsonParser;
 
   /**
    * Is equal to the number of removed bytes from byteBuffer
@@ -41,6 +41,8 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   private Flow.Subscription subscription;
 
   private boolean producerCompleted = false;
+  private boolean parsingCompleted = false;
+  private boolean erred = false;
 
   private Level nestedObjectLevel;
 
@@ -72,21 +74,41 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
   @Override
   public void onSubscribe(Flow.Subscription subscription) {
 
+    this.subscription = subscription;
     // later for back pressing
   }
 
   @Override
   public void onNext(byte[] item) {
 
-    handleNextBytes(item);
+    if (erred) {
+      return;
+    }
 
-    this.subscription.request(1);
+    if (producerCompleted && parsingCompleted) {
+      throw new IllegalStateException("Processor is completed!");
+    }
+
+    boolean status = handleNextBytes(item);
+    if (!status) {
+      // error occurred
+      subscription.cancel();
+      return;
+    }
+
+    if (!producerCompleted) {
+      this.subscription.request(1);
+    } else {
+      throw new IllegalStateException("Producer is already finished!");
+    }
   }
 
   @Override
   public void onError(Throwable throwable) {
 
+    erred = true;
     subscriber.onError(throwable);
+    cleanup();
   }
 
   @Override
@@ -96,9 +118,30 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
     // todo: be sure to consume last bytes
     // todo what to do if producer told us it has finished, but we need more bytes?
+    // todo test if valid data are coming after parsingCompleted
+    internalOnComplete();
   }
 
-  private void handleNextBytes(byte[] jsonBytes) {
+  private void internalOnComplete() {
+
+    if (!erred && parsingCompleted && producerCompleted) {
+      cleanup();
+      subscriber.onComplete();
+    }
+  }
+
+  private void cleanup() {
+
+    jsonParser.getFeeder().done();
+    jsonParser = null;
+  }
+
+  private void fireJsonError() {
+
+    onError(new IllegalArgumentException("Syntax error in JSON text"));
+  }
+
+  private boolean handleNextBytes(byte[] jsonBytes) {
 
     addToByteBuffer(jsonBytes);
 
@@ -106,7 +149,6 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
     int event; // event returned by the parser
 
     do {
-
       if (jsonBytesPosition != jsonBytes.length) {
         // provide the parser with more input
         jsonBytesPosition += jsonParser.getFeeder().feed(
@@ -117,38 +159,51 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
       event = jsonParser.nextEvent();
 
-      switch (event) {
+      if (parsingCompleted) {
+        if (event == JsonEvent.ERROR) {
+          fireJsonError();
+          return false;
+        }
+      } else {
+        switch (event) {
+          case JsonEvent.START_OBJECT:
+            if (nestedObjectLevel.isOnRootLevel()) {
+              startOfObjectIndex = jsonParser.getParsedCharacterCount();
+            }
+            nestedObjectLevel.increment();
+            break;
+          case JsonEvent.END_OBJECT:
+            nestedObjectLevel.decrement();
+            if (nestedObjectLevel.isOnRootLevel()) {
+              onEndObjectReached();
 
-      case JsonEvent.START_OBJECT:
-        if (nestedObjectLevel.isOnRootLevel()) {
-          startOfObjectIndex = jsonParser.getParsedCharacterCount();
+              // single object, no array
+              if (nestedArrayLevel.isOnRootLevel()) {
+                parsingCompleted = true;
+              }
+            }
+            break;
+          case JsonEvent.START_ARRAY:
+            nestedArrayLevel.increment();
+            break;
+          case JsonEvent.END_ARRAY:
+            nestedArrayLevel.decrement();
+            if (nestedArrayLevel.isOnRootLevel()) {
+              parsingCompleted = true;
+            }
+            break;
+          case JsonEvent.ERROR:
+            fireJsonError();
+            return false;
+          default:
+            // nothing
         }
-        nestedObjectLevel.increment();
-        break;
-      case JsonEvent.END_OBJECT:
-        nestedObjectLevel.decrement();
-        if (nestedObjectLevel.isOnRootLevel()) {
-          onEndObjectReached();
-        }
-        break;
-      case JsonEvent.START_ARRAY:
-        nestedArrayLevel.increment();
-        break;
-      case JsonEvent.END_ARRAY:
-        nestedArrayLevel.decrement();
-        if (nestedArrayLevel.isOnRootLevel()) {
-          onComplete();
-        }
-        break;
-      case JsonEvent.ERROR:
-        subscriber.onError(new IllegalStateException("Syntax error in JSON text"));
-        break;
-      default:
-        // nothing
       }
 
       // do until all jsonBytes consumed and more input needed
     } while (!(jsonBytesPosition == jsonBytes.length && event == JsonEvent.NEED_MORE_INPUT));
+
+    return true;
   }
 
   private void onEndObjectReached() {
@@ -157,14 +212,14 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
 
     byte[] bufferedBytes = getBytesInBuffer();
 
-    int start = startOfObjectIndex - parsedCharactersOffset - 1;
-    int end = endOfObjectIndex - parsedCharactersOffset;
+    int startIndexInBuffer = startOfObjectIndex - parsedCharactersOffset - 1;
+    int endIndexInBuffer = endOfObjectIndex - parsedCharactersOffset;
 
-    byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, start, end);
+    byte[] parsedObjectBytes = Arrays.copyOfRange(bufferedBytes, startIndexInBuffer, endIndexInBuffer);
     subscriber.onNext(new String(parsedObjectBytes));
-    // System.out.println("Object: " + new String(parsedObjectBytes));
 
-    removeBytesFromBuffer(parsedObjectBytes.length);
+    // remove json string of found object
+    removeBytesFromBuffer(endIndexInBuffer);
   }
 
   private byte[] getBytesInBuffer() {
@@ -185,10 +240,15 @@ public class JsonConverter implements Flow.Processor<byte[], String> {
    */
   private void removeBytesFromBuffer(int n) {
 
-    byte[] validBytes = Arrays.copyOfRange(byteBuffer, n + 1, byteBufferPosition);
+    int start = n;
+    if (n + 1 < byteBufferPosition) {
+      start++;
+    }
+
+    byte[] validBytes = Arrays.copyOfRange(byteBuffer, start, byteBufferPosition);
     byteBufferPosition = 0;
     addToByteBuffer(validBytes);
 
-    parsedCharactersOffset += n + 1;
+    parsedCharactersOffset += start;
   }
 }
