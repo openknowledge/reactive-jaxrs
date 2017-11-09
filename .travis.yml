@@ -4,3 +4,9 @@ jdk:
 # - openjdk9 # TODO openjdk9 is not available on Ubuntu 15.04, we have to pull 16.04 before build
 
 before_script: cd reactive-jaxrs
+script:
+  - mvn test -B
+  - mvn test -B -Ppayara
+cache:
+    directories:
+        - $HOME/.m2
