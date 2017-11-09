@@ -2,11 +2,14 @@ language: java
 jdk:
   - oraclejdk9
 # - openjdk9 # TODO openjdk9 is not available on Ubuntu 15.04, we have to pull 16.04 before build
+env:
+  - CONTAINER=wildfly
+  - CONTAINER=payara
 
-before_script: cd reactive-jaxrs
-script:
-  - mvn test -B
-  - mvn test -B -Ppayara
+before_install: cd reactive-jaxrs
+install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -P $CONTAINER
+script: mvn test -B -P $CONTAINER
+
 cache:
     directories:
         - $HOME/.m2
