@@ -52,7 +52,7 @@ public class CustomerRepository {
   @PostConstruct
   public void initialize() {
     try {
-      path = Paths.get("customers.json");
+      path = Paths.get("target/customers.json");
       if (!Files.exists(path)) {
         Files.createFile(path);
       }
@@ -164,7 +164,7 @@ public class CustomerRepository {
   }
 
   public List<Customer> findAll() throws IOException {
-    String customers = IOUtils.toString(new FileReader("customers.json")).trim();
+    String customers = IOUtils.toString(new FileReader("target/customers.json")).trim();
     customers = customers.substring(1, customers.length() - 1);
     return asList(customers.split("\\{")).stream().filter(s -> !s.isEmpty()).map(c -> c.substring(0, c.lastIndexOf('}'))).map(c -> c.split(",")).map(c -> {
       String firstName = c[0].substring(c[0].indexOf(':') + 3, c[0].length() - 1);
