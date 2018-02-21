@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.UnaryOperator;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;

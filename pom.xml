@@ -32,6 +32,7 @@
   </licenses>
 
   <modules>
+    <module>reactive-json-parser</module>
     <module>reactive-jaxrs</module>
     <module>reactive-jaxrs-example</module>
   </modules>
