@@ -32,17 +32,25 @@ public class JsonToken {
   private BigDecimal number;
 
   public JsonToken(char token) {
-    this.token = token;
+    this(token, Character.toString(token));
   }
 
   public JsonToken(char token, String value) {
-    this(token);
+    this.token = token;
     this.value = value;
   }
 
   public JsonToken(char token, String value, BigDecimal number) {
     this(token, value);
     this.number = number;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public char toChar() {
+    return token;
   }
 
   public String toString() {

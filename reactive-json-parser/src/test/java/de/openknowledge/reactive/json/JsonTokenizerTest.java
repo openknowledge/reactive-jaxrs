@@ -20,16 +20,23 @@ import org.mockito.stubbing.Answer;
 
 public class JsonTokenizerTest {
 
-  private static final String JSON_OBJECT
+  public static final String SAMPLE_JSON_OBJECT
     = "{\"key\": [true, false],\n"
     + " \"key\\t2\": {\"key\" : \"value\"},"
     + " \"key\\n3\": true,"
     + " \"key\\u0000\": false,"
     + " \"key5\": null"
     + "}";
-  private static final String JSON_ARRAY
+  public static final String SAMPLE_TRIMMED_JSON_OBJECT
+  = "{\"key\":[true,false],"
+  + "\"key\t2\":{\"key\":\"value\"},"
+  + "\"key\n3\":true,"
+  + "\"key\u0000\":false,"
+  + "\"key5\":null"
+  + "}";
+  public static final String SAMPLE_JSON_ARRAY
     = "[\n"
-    + JSON_OBJECT + ", \n"
+    + SAMPLE_JSON_OBJECT + ", \n"
     + "{}, \n"
     + "[1,2,3],"
     + "[] ,\n"
@@ -40,7 +47,7 @@ public class JsonTokenizerTest {
     + "3.141, 3e141,"
     + "true, false, null"
     + "]";
-  private static final JsonToken[] EXPECTED_TOKENS
+  public static final JsonToken[] SAMPLE_TOKENS
     = {
         JsonToken.START_ARRAY,
         JsonToken.START_OBJECT,
@@ -110,7 +117,7 @@ public class JsonTokenizerTest {
   
   @Test
   public void correctSequence() {
-    CharBuffer buffer = CharBuffer.wrap(JSON_ARRAY.toCharArray());
+    CharBuffer buffer = CharBuffer.wrap(SAMPLE_JSON_ARRAY.toCharArray());
     Subscription subscription = mock(Subscription.class);
     VoidAnswer onNext = invocation -> jsonTokenizer.onNext(buffer);
     VoidAnswer onComplete = invocation -> jsonTokenizer.onComplete();
@@ -123,30 +130,30 @@ public class JsonTokenizerTest {
     jsonTokenizer.subscribe(subscriber);
 
     ArgumentCaptor<JsonToken> tokens = ArgumentCaptor.forClass(JsonToken.class);
-    verify(subscriber, times(EXPECTED_TOKENS.length)).onNext(tokens.capture());
-    assertThat(tokens.getAllValues()).containsExactly(EXPECTED_TOKENS);
+    verify(subscriber, times(SAMPLE_TOKENS.length)).onNext(tokens.capture());
+    assertThat(tokens.getAllValues()).containsExactly(SAMPLE_TOKENS);
   }
 
   @Test
   public void correctRequests() {
-    CharBuffer buffer = CharBuffer.wrap(JSON_ARRAY.toCharArray());
+    CharBuffer buffer = CharBuffer.wrap(SAMPLE_JSON_ARRAY.toCharArray());
     Subscription bufferSubscription = mock(Subscription.class);
     doAnswer(new BufferAnswer(buffer)).when(bufferSubscription).request(1L);
     jsonTokenizer.onSubscribe(bufferSubscription);
     
     Subscriber<JsonToken> subscriber = mock(Subscriber.class);
-    TokenAnswer answer = new TokenAnswer();
+    RequestOneAnswer answer = new RequestOneAnswer();
     doAnswer(answer).when(subscriber).onSubscribe(any());
     doAnswer(answer).when(subscriber).onNext(any());
     jsonTokenizer.subscribe(subscriber);
 
     verify(bufferSubscription, times(buffer.capacity() + 1)).request(anyLong());
     ArgumentCaptor<JsonToken> tokens = ArgumentCaptor.forClass(JsonToken.class);
-    verify(subscriber, times(EXPECTED_TOKENS.length)).onNext(tokens.capture());
-    assertThat(tokens.getAllValues()).containsExactly(EXPECTED_TOKENS);
+    verify(subscriber, times(SAMPLE_TOKENS.length)).onNext(tokens.capture());
+    assertThat(tokens.getAllValues()).containsExactly(SAMPLE_TOKENS);
   }
 
-  private static interface VoidAnswer extends Answer<Void> {
+  public static interface VoidAnswer extends Answer<Void> {
     default Void answer(InvocationOnMock invocation) throws Throwable {
       execute(invocation);
       return null;
@@ -176,7 +183,7 @@ public class JsonTokenizerTest {
     }
   }
 
-  public static class TokenAnswer implements Answer<Void> {
+  public static class RequestOneAnswer implements Answer<Void> {
 
     private Subscription subscription;
 
