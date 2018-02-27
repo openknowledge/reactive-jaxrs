@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,6 +44,9 @@ import javax.enterprise.context.ApplicationScoped;
 import org.apache.commons.io.IOUtils;
 
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
+import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.json.JsonArrayProcessor;
+import de.openknowledge.reactive.json.JsonTokenizer;
 
 @ApplicationScoped
 public class CustomerRepository {
@@ -174,26 +178,17 @@ public class CustomerRepository {
   }
 
   public Publisher<Customer> findAllAsync() throws IOException {
-    String customers = IOUtils.toString(new FileReader("customers.json")).trim();
-    final String customerData = customers.substring(1, customers.length() - 1);
-
-    return new Publisher<Customer>() {
-      @Override
-      public void subscribe(Subscriber<? super Customer> subscriber) {
-        asList(customerData.split("\\{"))
-          .stream()
-          .filter(s -> !s.isEmpty())
-          .map(c -> c.substring(0, c.lastIndexOf('}')))
-          .map(c -> c.split(","))
-          .map(c -> {
-            String firstName = c[0].substring(c[0].indexOf(':') + 3, c[0].length() - 1);
-            String lastName = c[1].substring(c[1].indexOf(':') + 3, c[1].length() - 1);
-            return new Customer(firstName, lastName);
-          })
-          .forEach(subscriber::onNext);
-        subscriber.onComplete();
-      }
-    };
+    AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+    AsynchronousFileChannelPublisher filePublisher = new AsynchronousFileChannelPublisher(fileChannel, 4096);
+    DecodingProcessor decoder = new DecodingProcessor(Charset.defaultCharset(), 4096);
+    JsonTokenizer tokenizer = new JsonTokenizer();
+    JsonArrayProcessor arrayProcessor = new JsonArrayProcessor();
+    CustomerProcessor customerProcessor = new CustomerProcessor();
+    filePublisher.subscribe(decoder);
+    decoder.subscribe(tokenizer);
+    tokenizer.subscribe(arrayProcessor);
+    arrayProcessor.subscribe(customerProcessor);
+    return customerProcessor;
   }
 
   public static <V, A> CompletionHandler<V, SingleItemPublisher<A>> andThen(BiConsumer<V, SingleItemPublisher<A>> consumer) {

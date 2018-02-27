@@ -12,7 +12,13 @@
  */
 package de.openknowledge.jaxrs.reactive;
 
-import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.util.concurrent.Flow;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -23,13 +29,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.concurrent.Flow;
+
 import org.apache.commons.io.IOUtils;
+
+import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.json.JsonArrayProcessor;
+import de.openknowledge.reactive.json.JsonTokenizer;
 
 @Provider
 public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publisher<?>> {
@@ -51,7 +56,7 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
                                     Type type,
                                     Annotation[] annotations,
                                     MediaType mediaType,
-                                    MultivaluedMap<String, String> multivaluedMap,
+                                    MultivaluedMap<String, String> headers,
                                     InputStream inputStream) throws IOException, WebApplicationException {
     Type targetType = ((ParameterizedType) type).getActualTypeArguments()[0];
 
@@ -72,7 +77,7 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
     }
 
     // TODO is it really necessary? next readFrom is otherwise blocking, wtf?!
-    entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, IOUtils.toInputStream(""));
+    entityReader.readFrom(targetClass, targetType, annotations, mediaType, headers, IOUtils.toInputStream(""));
 
     ServletInputStream servletInputStream = null;
     try {
@@ -85,30 +90,15 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       throw new IllegalArgumentException();
     }
 
-    final ServletInputStream finalServletInputStream = servletInputStream;
-    return (Flow.Publisher<Object>)subscriber -> {
-      ServletInputStreamPublisherAdapter publisherAdapter = new ServletInputStreamPublisherAdapter(finalServletInputStream);
-
-      JsonConverter jsonConverter = new JsonConverter();
-
-      publisherAdapter.subscribe(jsonConverter);
-
-      AbstractSimpleProcessor processor = new AbstractSimpleProcessor<String, Object>() {
-        @Override
-        protected Object process(String item) {
-          try {
-            return entityReader.readFrom(targetClass, targetType, annotations, mediaType, multivaluedMap, IOUtils.toInputStream(item));
-          } catch (IOException e) {
-            onError(e);
-          }
-
-          return null;
-        }
-      };
-
-      jsonConverter.subscribe(processor);
-
-      processor.subscribe(subscriber);
-    };
+    ServletInputStreamPublisher inputStreamPublisher = new ServletInputStreamPublisher(servletInputStream, 32768);
+    DecodingProcessor decodingProcessor = new DecodingProcessor(Charset.forName(request.getCharacterEncoding()), 32768);
+    JsonTokenizer tokenizer = new JsonTokenizer();
+    JsonArrayProcessor arrayProcessor = new JsonArrayProcessor();
+    MessageBodyReaderProcessor readerProcessor = new MessageBodyReaderProcessor(entityReader, targetClass, targetType, annotations, mediaType, headers, request.getCharacterEncoding());
+    inputStreamPublisher.subscribe(decodingProcessor);
+    decodingProcessor.subscribe(tokenizer);
+    tokenizer.subscribe(arrayProcessor);
+    arrayProcessor.subscribe(readerProcessor);
+    return readerProcessor;
   }
 }
