@@ -1,7 +1,6 @@
 package de.openknowledge.reactive.charset;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -32,6 +31,6 @@ public class EncodingProcessorTest {
       charBuffer.limit(i);
       processor.onNext(charBuffer);
     }
-    assertThat(result.toByteArray(), is(AEGAEUM.getBytes(charset)));
+    assertThat(result.toByteArray()).isEqualTo(AEGAEUM.getBytes(charset));
   }
 }

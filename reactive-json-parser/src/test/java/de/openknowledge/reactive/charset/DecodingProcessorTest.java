@@ -1,7 +1,6 @@
 package de.openknowledge.reactive.charset;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -12,7 +11,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import de.openknowledge.reactive.EmptySubscription;
 import de.openknowledge.reactive.TestSubscriber;
-import de.openknowledge.reactive.charset.DecodingProcessor;
 
 public class DecodingProcessorTest {
 
@@ -32,6 +30,6 @@ public class DecodingProcessorTest {
       byteBuffer.limit(i);
       processor.onNext(byteBuffer);
     }
-    assertThat(result.toString(), is(AEGAEUM));
+    assertThat(result.toString()).isEqualTo(AEGAEUM);
   }
 }
