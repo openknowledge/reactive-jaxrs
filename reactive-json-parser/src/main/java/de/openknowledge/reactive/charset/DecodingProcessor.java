@@ -4,16 +4,16 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.util.concurrent.Flow.Processor;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
+import java.nio.charset.CoderResult;
 
-public class DecodingProcessor implements Processor<ByteBuffer, CharBuffer> {
+import de.openknowledge.reactive.AbstractSimpleProcessor;
 
-  private Subscription subscription;
-  private Subscriber<? super CharBuffer> subscriber;
+public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharBuffer> {
+
   private CharsetDecoder decoder;
+  private ByteBuffer byteBuffer;
   private CharBuffer charBuffer;
+  private CoderResult result;
 
   public DecodingProcessor(Charset charset, int bufferSize) {
     decoder = charset.newDecoder();
@@ -22,55 +22,35 @@ public class DecodingProcessor implements Processor<ByteBuffer, CharBuffer> {
   }
 
   @Override
-  public void onSubscribe(Subscription s) {
-    subscription = s;
-  }
-
-  @Override
-  public void onNext(ByteBuffer byteBuffer) {
+  public void onNext(ByteBuffer buffer) {
+    if (buffer == null) {
+      throw new NullPointerException("buffer may not be null");
+    }
+    byteBuffer = buffer;
     charBuffer.reset();
-    decoder.decode(byteBuffer, charBuffer, false);
+    result = decoder.decode(buffer, charBuffer, false);
     if (charBuffer.position() == 0) {
-      subscription.request(1);
+      super.request(1);
     } else {
       charBuffer.flip();
       charBuffer.mark();
-      subscriber.onNext(charBuffer);
+      publish(charBuffer);
     }
   }
 
   @Override
   public void onComplete() {
-    // TODO wait for request
-    charBuffer.reset();
-    decoder.flush(charBuffer);
-    if (charBuffer.position() != 0) {
-      charBuffer.flip();
-      charBuffer.mark();
-      subscriber.onNext(charBuffer);
+    // TODO error handling
+    if (byteBuffer != null) {
+      decoder.decode(byteBuffer, charBuffer, true);
+      decoder.flush(charBuffer);
     }
-    subscriber.onComplete();
-  }
-
-  @Override
-  public void onError(Throwable error) {
-    subscriber.onError(error);
-  }
-
-  @Override
-  public void subscribe(Subscriber<? super CharBuffer> s) {
-    subscriber = s;
-    subscriber.onSubscribe(new Subscription() {
-      
-      @Override
-      public void request(long request) {
-        subscription.request(request);
-      }
-      
-      @Override
-      public void cancel() {
-        subscription.cancel();
-      }
-    });
+    if (!charBuffer.hasRemaining()) {
+      super.onComplete();
+    } else if (isRequested()) {
+      publish(charBuffer);
+    } else {
+      // TODO wait for input
+    }
   }
 }

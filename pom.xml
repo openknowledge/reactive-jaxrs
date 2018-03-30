@@ -34,6 +34,7 @@
   <modules>
     <module>reactive-json-parser</module>
     <module>reactive-jaxrs</module>
+    <module>reactive-jaxrs-tck</module>
     <module>reactive-jaxrs-example</module>
   </modules>
 </project>

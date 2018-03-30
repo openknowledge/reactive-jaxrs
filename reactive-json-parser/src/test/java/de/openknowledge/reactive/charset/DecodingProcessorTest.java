@@ -19,7 +19,7 @@ public class DecodingProcessorTest {
   @ParameterizedTest
   @ValueSource(strings = {"UTF-8", "UTF-16", "UTF-16be", "UTF-16le", "ISO-8859-1", "IBM437"})
   public void decode(@ConvertCharset Charset charset) {
-    DecodingProcessor processor = new DecodingProcessor(charset, 2);
+    DecodingProcessor processor = new DecodingProcessor(charset, 1);
     processor.onSubscribe(new EmptySubscription() {});
     StringBuilder result = new StringBuilder();
     TestSubscriber<CharBuffer> subscriber = item -> { while (item.hasRemaining()) result.append(item.get()); };

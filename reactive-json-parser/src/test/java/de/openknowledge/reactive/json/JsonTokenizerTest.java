@@ -159,7 +159,7 @@ public class JsonTokenizerTest {
       return null;
     }
 
-    void execute(InvocationOnMock invocation);
+    void execute(InvocationOnMock invocation) throws Throwable;
   }
 
   public class BufferAnswer implements Answer<Void> {
