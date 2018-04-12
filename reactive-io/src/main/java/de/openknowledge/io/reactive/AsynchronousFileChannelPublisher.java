@@ -1,4 +1,4 @@
-package de.openknowledge.jaxrs.reactive.test;
+package de.openknowledge.io.reactive;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,6 +24,7 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
     }
     channel = asynchronousChannel;
     buffer = ByteBuffer.allocate(bufferSize);
+    buffer.mark();
   }
 
   @Override
@@ -36,8 +37,13 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
       
       @Override
       public void request(long count) {
-        if (count < 0) {
-          throw new IllegalArgumentException("count may not be negative");
+        Subscriber<? super ByteBuffer> s = subscriber;
+        if (s == null) {
+          return;
+        }
+        if (count <= 0) {
+          s.onError(new IllegalArgumentException("negative subscription request not allowed, but was " + count));
+          subscriber = null;
         }
         requested.addAndGet(count);
         read();
@@ -48,8 +54,12 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
         try {
           channel.close();
         } catch (IOException e) {
-          subscriber.onError(e);
+          Subscriber<? super ByteBuffer> s = subscriber;
+          if (s != null) {
+            s.onError(e);
+          }
         }
+        subscriber = null;
       }
     });
   }
@@ -57,14 +67,23 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
   private void read() {
     Long oldPosition = filePosition.getAndSet(null);
     if (oldPosition != null) {
+      buffer.reset();
       channel.read(buffer, oldPosition, oldPosition, new CompletionHandler<Integer, Long>() {
 
         @Override
         public void completed(Integer readCount, Long oldPosition) {
-          if (readCount == -1) {
-            subscriber.onComplete();
+          Subscriber<? super ByteBuffer> s = subscriber;
+          if (s == null) {
+            return;
+          }
+          if (readCount <= 0) {
+            s.onComplete();
+            subscriber = null;
+            return;
           } else {
-            subscriber.onNext(buffer);
+            buffer.flip();
+            buffer.mark();
+            s.onNext(buffer);
             filePosition.set(oldPosition + readCount);
           }
           long waitingRequests = requested.decrementAndGet();
@@ -80,7 +99,10 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
           } catch (IOException e) {
             // ignore
           }
-          subscriber.onError(error);
+          Subscriber<? super ByteBuffer> s = subscriber;
+          if (s != null) {
+            s.onError(error);
+          }
         }
       });
     }

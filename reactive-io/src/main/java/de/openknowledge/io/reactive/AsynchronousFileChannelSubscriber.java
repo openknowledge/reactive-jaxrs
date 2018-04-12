@@ -1,4 +1,4 @@
-package de.openknowledge.jaxrs.reactive.test;
+package de.openknowledge.io.reactive;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

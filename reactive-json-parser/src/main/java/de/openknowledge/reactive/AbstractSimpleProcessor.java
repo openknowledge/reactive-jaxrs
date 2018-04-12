@@ -58,13 +58,17 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
   @Override
   public void onComplete() {
-    subscriber.onComplete();
+    Subscriber<? super R> s = subscriber;
+    if (s != null) {
+      s.onComplete();
+    }
   }
 
   @Override
   public void onError(Throwable e) {
-    if (subscriber != null) {
-      subscriber.onError(e);
+    Subscriber<? super R> s = subscriber;
+    if (s != null) {
+      s.onError(e);
     } else {
       error = e; 
     }
@@ -75,7 +79,10 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
     if (newRequested < 0) {
       throw new IllegalStateException("publish called, but no input was requested");
     }
-    subscriber.onNext(item);
+    Subscriber<? super R> s = subscriber;
+    if (s != null) {
+      s.onNext(item);
+    }
   }
 
   protected boolean isRequested() {
