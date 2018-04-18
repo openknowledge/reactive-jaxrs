@@ -21,6 +21,10 @@ public class AsynchronousFileChannelSubscriber implements Subscriber<ByteBuffer>
 
   @Override
   public void onSubscribe(Subscription s) {
+    if (subscription != null) {
+      s.cancel();
+      return;
+    }
     subscription = s;
     subscription.request(1);
   }
