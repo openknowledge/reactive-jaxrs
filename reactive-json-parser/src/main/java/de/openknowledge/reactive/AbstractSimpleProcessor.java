@@ -18,15 +18,16 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
       throw new NullPointerException("subscription may not be null");
     } else if (subscription != null) {
       s.cancel();
-    } else { 
+    } else {
       subscription = s;
     }
   }
 
   @Override
   public void subscribe(Subscriber<? super R> s) {
+    subscriber = s;
     s.onSubscribe(new Subscription() {
-      
+
       @Override
       public void request(long request) {
         if (subscription == null) {
@@ -39,7 +40,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
         requested.addAndGet(request);
         AbstractSimpleProcessor.this.request(request);
       }
-      
+
       @Override
       public void cancel() {
         if (subscription == null) {
@@ -53,7 +54,6 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
     if (error != null) {
       s.onError(error);
     }
-    subscriber = s;
   }
 
   @Override
@@ -70,7 +70,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
     if (s != null) {
       s.onError(e);
     } else {
-      error = e; 
+      error = e;
     }
   }
 
