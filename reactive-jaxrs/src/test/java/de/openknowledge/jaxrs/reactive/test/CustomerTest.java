@@ -37,6 +37,7 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
 
 @RunAsClient
@@ -57,27 +58,50 @@ public class CustomerTest {
   }
 
   @Test
-  public void put(@ArquillianResource URL url) throws URISyntaxException {
-
+  public void putOneCustomer(@ArquillianResource URL url) throws URISyntaxException {
 
     ClientBuilder.newClient().target(url.toURI())
       .path("customers")
       .request()
-      .put(entity("[{\"firstName\": \"Joe\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
+      .put(entity("[{\"firstName\": \"John\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
 
     Response response = ClientBuilder.newClient().target(url.toURI())
       .path("customers")
       .request(MediaType.APPLICATION_JSON)
       .get();
 
+    List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
+
+    Customer john = new Customer();
+    john.setFirstName("John");
+    john.setLastName("Doe");
+
+    assertThat(customers).isEqualTo(List.of(john));
+  }
+
+  @Test
+  public void putCustomers(@ArquillianResource URL url) throws URISyntaxException {
+
+    ClientBuilder.newClient().target(url.toURI())
+      .path("customers")
+      .request()
+      .put(entity("[{\"firstName\": \"John\", \"lastName\": \"Doe\"}, {\"firstName\": \"Jane\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
+
+    Response response = ClientBuilder.newClient().target(url.toURI())
+      .path("customers")
+      .request(MediaType.APPLICATION_JSON)
+      .get();
 
     List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
 
-    Customer customer = new Customer();
-    customer.setFirstName("Joe");
-    customer.setLastName("Doe");
+    Customer john = new Customer();
+    john.setFirstName("John");
+    john.setLastName("Doe");
 
-    assertThat(customers).isEqualTo(List.of(customer));
+    Customer jane = new Customer();
+    jane.setFirstName("Jane");
+    jane.setLastName("Doe");
+
+    assertThat(customers).isEqualTo(List.of(john, jane));
   }
-
 }
