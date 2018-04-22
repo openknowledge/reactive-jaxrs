@@ -6,7 +6,6 @@ env:
   - CONTAINER=wildfly
   - CONTAINER=payara
 
-before_install: cd reactive-jaxrs
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -P $CONTAINER
 script: mvn test -B -P $CONTAINER
 
