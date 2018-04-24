@@ -21,6 +21,10 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
     super(new TestEnvironment());
   }
 
+  public boolean skipStochasticTests() {
+	return true;
+  }
+
   @Override
   public Publisher<ByteBuffer> createFlowPublisher(long elements) {
     AsynchronousFileChannelPublisher publisher = null;

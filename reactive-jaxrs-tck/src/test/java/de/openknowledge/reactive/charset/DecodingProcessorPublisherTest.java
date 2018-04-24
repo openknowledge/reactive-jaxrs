@@ -20,6 +20,10 @@ public class DecodingProcessorPublisherTest extends FlowPublisherVerification<Ch
     super(new TestEnvironment());
   }
 
+  public boolean skipStochasticTests() {
+	return true;
+  }
+
   @Override
   public Publisher<CharBuffer> createFlowPublisher(long elements) {
     DecodingProcessor decodingProcessor = new DecodingProcessor(StandardCharsets.UTF_8, 2);
