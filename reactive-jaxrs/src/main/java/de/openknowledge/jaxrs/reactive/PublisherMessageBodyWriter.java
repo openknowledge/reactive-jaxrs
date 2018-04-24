@@ -12,6 +12,15 @@
  */
 package de.openknowledge.jaxrs.reactive;
 
+import static de.openknowledge.jaxrs.reactive.GenericsUtil.*;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.concurrent.Flow;
+import java.util.concurrent.Flow.Publisher;
+
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
@@ -20,14 +29,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.concurrent.Flow;
-
-import static de.openknowledge.jaxrs.reactive.Utils.extractClassFromType;
-import static de.openknowledge.jaxrs.reactive.Utils.extractGenericTypeFromInterface;
 
 @Provider
 public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publisher<?>> {
@@ -53,8 +54,8 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
   public void writeTo(Flow.Publisher<?> publisher, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
     NonClosableOutputStream outputStream = new NonClosableOutputStream(entityStream);
 
-    Type targetType = extractGenericTypeFromInterface(type, Flow.Publisher.class);
-    Class targetClass = extractClassFromType(targetType);
+    Type targetType = GenericsUtil.fromGenericType(genericType, Publisher.class, 0);
+    Class<?> targetClass = getRawType(targetType);
 
     MessageBodyWriter entityWriter = providers.getMessageBodyWriter(targetClass, targetType, annotations, mediaType);
     if (entityWriter == null) {
@@ -70,7 +71,7 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
       @Override
       public void onNext(Object item) {
         try {
-          entityWriter.writeTo(item, targetClass, targetClass, annotations, mediaType, httpHeaders, outputStream);
+          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, outputStream);
           outputStream.flush();
         } catch (IOException e) {
           // TODO
