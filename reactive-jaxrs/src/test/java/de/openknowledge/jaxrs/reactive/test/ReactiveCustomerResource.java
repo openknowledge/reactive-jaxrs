@@ -12,6 +12,10 @@
  */
 package de.openknowledge.jaxrs.reactive.test;
 
+import java.io.IOException;
+import java.util.concurrent.Flow;
+import java.util.concurrent.Flow.Publisher;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -19,12 +23,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.concurrent.Flow;
 
 @ApplicationScoped
 @Path("/reactive/customers")
@@ -35,31 +34,9 @@ public class ReactiveCustomerResource {
 
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
-  public void setCustomers(Flow.Publisher<Customer> customers, @Suspended AsyncResponse response) throws IOException {
-    repository
-      .save(customers)
-      .subscribe(new Flow.Subscriber<>() {
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-          subscription.request(Long.MAX_VALUE);
-        }
-
-        @Override
-        public void onNext(Integer item) {
-          System.out.println("=====  Customer Count: " + item);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-
-        }
-
-        @Override
-        public void onComplete() {
-          System.out.println("=====  Completed ");
-          response.resume(Response.noContent().build());
-        }
-      });
+  @Produces(MediaType.APPLICATION_JSON)
+  public Publisher<Integer> setCustomers(Publisher<Customer> customers) throws IOException {
+    return repository.save(customers);
   }
 
   @GET

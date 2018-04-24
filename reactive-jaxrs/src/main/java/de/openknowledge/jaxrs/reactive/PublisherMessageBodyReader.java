@@ -18,6 +18,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.concurrent.Flow;
 
 import javax.servlet.ServletInputStream;
@@ -90,11 +91,13 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       throw new IllegalArgumentException();
     }
 
+    request.startAsync();
+    String characterEncoding = Optional.ofNullable(request.getCharacterEncoding()).orElse(Charset.defaultCharset().name());
     ServletInputStreamPublisher inputStreamPublisher = new ServletInputStreamPublisher(servletInputStream, 32768);
-    DecodingProcessor decodingProcessor = new DecodingProcessor(Charset.forName(request.getCharacterEncoding()), 32768);
+    DecodingProcessor decodingProcessor = new DecodingProcessor(Charset.forName(characterEncoding), 32768);
     JsonTokenizer tokenizer = new JsonTokenizer();
     JsonArrayProcessor arrayProcessor = new JsonArrayProcessor();
-    MessageBodyReaderProcessor readerProcessor = new MessageBodyReaderProcessor(entityReader, targetClass, targetType, annotations, mediaType, headers, request.getCharacterEncoding());
+    MessageBodyReaderProcessor readerProcessor = new MessageBodyReaderProcessor(entityReader, targetClass, targetType, annotations, mediaType, headers, characterEncoding);
     inputStreamPublisher.subscribe(decodingProcessor);
     decodingProcessor.subscribe(tokenizer);
     tokenizer.subscribe(arrayProcessor);

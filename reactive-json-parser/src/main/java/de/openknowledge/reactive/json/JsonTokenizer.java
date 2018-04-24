@@ -2,7 +2,6 @@ package de.openknowledge.reactive.json;
 
 import java.math.BigDecimal;
 import java.nio.CharBuffer;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.json.stream.JsonParsingException;
 
@@ -13,7 +12,6 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
   private CharBuffer buffer;
   private StringBuilder value = new StringBuilder();
   private State state = State.END;
-  private AtomicLong requested = new AtomicLong(0);
   private ProcessState processState = ProcessState.STOPPED;
 
   @Override
@@ -50,7 +48,6 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
 
   @Override
   protected void request(long n) {
-    requested.addAndGet(n);
     readNext();
   }
 
@@ -58,8 +55,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
   protected void publish(JsonToken token) {
     state = State.END;
     super.publish(token);
-    long remaining = requested.decrementAndGet();
-    if (remaining > 0) {
+    if (isRequested()) {
       readNext();
     }
   }
@@ -167,8 +163,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
     default:
       if (Character.isWhitespace(character)) {
         publishNumber();
-        long remaining = requested.decrementAndGet();
-        if (remaining > 0) {
+        if (isRequested()) {
           readNext();
         }
       } else {

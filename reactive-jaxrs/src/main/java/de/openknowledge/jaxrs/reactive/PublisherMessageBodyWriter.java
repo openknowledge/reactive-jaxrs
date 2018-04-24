@@ -12,14 +12,18 @@
  */
 package de.openknowledge.jaxrs.reactive;
 
-import static de.openknowledge.jaxrs.reactive.GenericsUtil.*;
+import static de.openknowledge.jaxrs.reactive.GenericsUtil.getRawType;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.Flow.Subscription;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
@@ -61,11 +65,13 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
     if (entityWriter == null) {
       throw new IllegalArgumentException();
     }
+    entityWriter.writeTo(null, targetClass, targetType, annotations, mediaType, httpHeaders, new ByteArrayOutputStream());
 
+    List<Subscription> subscriptions = new ArrayList();
     publisher.subscribe(new Flow.Subscriber<Object>() {
       @Override
       public void onSubscribe(Flow.Subscription subscription) {
-        // does nothing
+        subscriptions.add(subscription);
       }
 
       @Override
@@ -73,6 +79,7 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
         try {
           entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, outputStream);
           outputStream.flush();
+          
         } catch (IOException e) {
           // TODO
           e.printStackTrace();
@@ -94,5 +101,6 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
         }
       }
     });
+    subscriptions.forEach(s -> s.request(Long.MAX_VALUE));
   }
 }
