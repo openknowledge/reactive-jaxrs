@@ -12,9 +12,20 @@
  */
 package de.openknowledge.jaxrs.reactive.test;
 
-import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
-import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
-import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
+import static de.openknowledge.jaxrs.reactive.test.StopWatch.time;
+import static javax.ws.rs.client.Entity.entity;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -28,26 +39,18 @@ import org.jboss.shrinkwrap.descriptor.api.webapp31.WebAppDescriptor;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-
-import static de.openknowledge.jaxrs.reactive.test.StopWatch.time;
-import static javax.ws.rs.client.Entity.entity;
-import static org.assertj.core.api.Assertions.assertThat;
+import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
+import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
+import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
+import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.json.JsonTokenizer;
 
 @RunAsClient
 @RunWith(Arquillian.class)
-@Ignore("Does not stop the container")
 public class CustomerBatchUploadTest {
 
   @ArquillianResource private URL url;
@@ -63,6 +66,9 @@ public class CustomerBatchUploadTest {
       .addPackage(Customer.class.getPackage())
       .addPackage(JsonConverter.class.getPackage())
       .addPackage(PublisherMessageBodyReader.class.getPackage())
+      .addPackage(DecodingProcessor.class.getPackage())
+      .addPackage(AbstractSimpleProcessor.class.getPackage())
+      .addPackage(JsonTokenizer.class.getPackage())
       .addAsLibraries(pom.resolve(libraries).withTransitivity().asFile())
       .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
         .addDefaultNamespaces()
@@ -78,7 +84,7 @@ public class CustomerBatchUploadTest {
   @Test
   public void synchronous() throws Exception {
 
-    int amount = 100000;
+    int amount = 2;
 
     List<Customer> customers = createRandomCustomers(amount);
 
@@ -88,7 +94,7 @@ public class CustomerBatchUploadTest {
           .path("customers")
           .request()
           .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
-        assertThat(response.getStatus()).isEqualTo(204);
+        assertThat(response.getStatus()).isEqualTo(200);
       }
 
     );
@@ -99,7 +105,7 @@ public class CustomerBatchUploadTest {
   @Test
   public void asynchronous() throws Exception {
 
-    int amount = 100000;
+    int amount = 2;
 
     List<Customer> customers = createRandomCustomers(amount);
 
@@ -109,7 +115,7 @@ public class CustomerBatchUploadTest {
           .path("reactive/customers")
           .request()
           .put(entity(customers, MediaType.APPLICATION_JSON_TYPE));
-        assertThat(response.getStatus()).isEqualTo(204);
+        assertThat(response.getStatus()).isEqualTo(200);
       }
     );
 
