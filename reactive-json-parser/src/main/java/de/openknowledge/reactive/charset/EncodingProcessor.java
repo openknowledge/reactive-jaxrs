@@ -13,6 +13,7 @@ public class EncodingProcessor implements Processor<CharBuffer, ByteBuffer> {
   private Subscription subscription;
   private Subscriber<? super ByteBuffer> subscriber;
   private CharsetEncoder encoder;
+  private CharBuffer charBuffer;
   private ByteBuffer byteBuffer;
 
   public EncodingProcessor(Charset charset, int bufferSize) {
@@ -27,7 +28,8 @@ public class EncodingProcessor implements Processor<CharBuffer, ByteBuffer> {
   }
 
   @Override
-  public void onNext(CharBuffer charBuffer) {
+  public void onNext(CharBuffer buffer) {
+    charBuffer = buffer;
     byteBuffer.position(0);
     byteBuffer.limit(byteBuffer.capacity());
     encoder.encode(charBuffer, byteBuffer, false);
@@ -41,6 +43,7 @@ public class EncodingProcessor implements Processor<CharBuffer, ByteBuffer> {
   @Override
   public void onComplete() {
     byteBuffer.reset();
+    encoder.encode(charBuffer, byteBuffer, true);
     encoder.flush(byteBuffer);
     if (byteBuffer.position() != 0) {
       byteBuffer.flip();

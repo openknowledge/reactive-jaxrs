@@ -19,13 +19,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Publisher;
-import java.util.concurrent.Flow.Subscription;
 
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -38,7 +38,7 @@ import javax.ws.rs.ext.Providers;
 public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publisher<?>> {
 
   @Context
-  private HttpServletResponse response;
+  private HttpServletRequest request;
 
   @Context
   private Providers providers;
@@ -56,7 +56,13 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
 
   @Override
   public void writeTo(Flow.Publisher<?> publisher, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-    NonClosableOutputStream outputStream = new NonClosableOutputStream(entityStream);
+    
+    AsyncContext asyncContext;
+    if (!request.isAsyncStarted()) {
+      asyncContext = request.startAsync();
+    } else {
+      asyncContext = request.getAsyncContext();
+    }
 
     Type targetType = GenericsUtil.fromGenericType(genericType, Publisher.class, 0);
     Class<?> targetClass = getRawType(targetType);
@@ -67,17 +73,41 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
     }
     entityWriter.writeTo(null, targetClass, targetType, annotations, mediaType, httpHeaders, new ByteArrayOutputStream());
 
-    List<Subscription> subscriptions = new ArrayList();
     publisher.subscribe(new Flow.Subscriber<Object>() {
+      private boolean first = true;
       @Override
       public void onSubscribe(Flow.Subscription subscription) {
-        subscriptions.add(subscription);
+        try {
+          asyncContext.getResponse().getOutputStream().setWriteListener(new WriteListener() {
+            
+            @Override
+            public void onWritePossible() throws IOException {
+              subscription.request(Long.MAX_VALUE);
+            }
+            
+            @Override
+            public void onError(Throwable error) {
+              // TODO error handling
+              error.printStackTrace();
+            }
+          });
+        } catch (IOException e) {
+          // TODO error handling
+          e.printStackTrace();
+        }
       }
 
       @Override
       public void onNext(Object item) {
         try {
-          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, outputStream);
+          ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
+          if (first) {
+            outputStream.print('[');
+            first = false;
+          } else {
+            outputStream.print(',');
+          }
+          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, new NonClosableOutputStream(outputStream));
           outputStream.flush();
           
         } catch (IOException e) {
@@ -95,12 +125,14 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
       @Override
       public void onComplete() {
         try {
-          outputStream.closeAsync();
+          ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
+          outputStream.println(']');
+          outputStream.flush();
+          asyncContext.complete();
         } catch (IOException e) {
           // we are finished, ignoring errors
         }
       }
     });
-    subscriptions.forEach(s -> s.request(Long.MAX_VALUE));
   }
 }
