@@ -85,7 +85,6 @@ public class CustomerTest {
       .request(MediaType.APPLICATION_JSON)
       .get();
 
-    String readEntity = response.readEntity(String.class);
     List<Customer> customers = response.readEntity(new GenericType<List<Customer>>() {});
 
     Customer john = new Customer();
