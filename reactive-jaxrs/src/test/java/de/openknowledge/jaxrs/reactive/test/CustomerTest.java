@@ -38,7 +38,13 @@ import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.openknowledge.io.reactive.AsynchronousFileChannelPublisher;
+import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
+import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
+import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.json.JsonTokenizer;
 
 @RunAsClient
 @RunWith(Arquillian.class)
@@ -47,10 +53,19 @@ public class CustomerTest {
   @Deployment
   public static WebArchive deployment() {
     PomEquippedResolveStage pom = Maven.resolver().loadPomFromFile("pom.xml");
+
+    String[] libraries = new String[]{"de.undercouch:actson", "commons-io:commons-io"};
+
     return ShrinkWrap.create(WebArchive.class)
       .addPackage(SingleItemPublisher.class.getPackage())
       .addPackage(Customer.class.getPackage())
-      .addAsLibraries(pom.resolve("commons-io:commons-io").withTransitivity().asFile())
+      .addPackage(JsonConverter.class.getPackage())
+      .addPackage(PublisherMessageBodyReader.class.getPackage())
+      .addPackage(DecodingProcessor.class.getPackage())
+      .addPackage(AbstractSimpleProcessor.class.getPackage())
+      .addPackage(JsonTokenizer.class.getPackage())
+      .addPackage(AsynchronousFileChannelPublisher.class.getPackage())
+      .addAsLibraries(pom.resolve(libraries).withTransitivity().asFile())
       .setWebXML(new StringAsset(Descriptors.create(WebAppDescriptor.class)
         .addDefaultNamespaces()
         .version("3.1")
@@ -61,12 +76,12 @@ public class CustomerTest {
   public void putOneCustomer(@ArquillianResource URL url) throws URISyntaxException {
 
     ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
+      .path("reactive/customers")
       .request()
       .put(entity("[{\"firstName\": \"John\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
 
     Response response = ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
+      .path("reactive/customers")
       .request(MediaType.APPLICATION_JSON)
       .get();
 
@@ -83,12 +98,12 @@ public class CustomerTest {
   public void putCustomers(@ArquillianResource URL url) throws URISyntaxException {
 
     ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
+      .path("reactive/customers")
       .request()
       .put(entity("[{\"firstName\": \"John\", \"lastName\": \"Doe\"}, {\"firstName\": \"Jane\", \"lastName\": \"Doe\"}]", MediaType.APPLICATION_JSON_TYPE));
 
     Response response = ClientBuilder.newClient().target(url.toURI())
-      .path("customers")
+      .path("reactive/customers")
       .request(MediaType.APPLICATION_JSON)
       .get();
 

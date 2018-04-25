@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CoderResult;
 
 import de.openknowledge.reactive.AbstractSimpleProcessor;
 
@@ -13,7 +12,6 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
   private CharsetDecoder decoder;
   private ByteBuffer byteBuffer;
   private CharBuffer charBuffer;
-  private CoderResult result;
 
   public DecodingProcessor(Charset charset, int bufferSize) {
     decoder = charset.newDecoder();
@@ -28,7 +26,7 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
     }
     byteBuffer = buffer;
     charBuffer.reset();
-    result = decoder.decode(buffer, charBuffer, false);
+    decoder.decode(buffer, charBuffer, false);
     if (charBuffer.position() == 0) {
       super.request(1);
     } else {

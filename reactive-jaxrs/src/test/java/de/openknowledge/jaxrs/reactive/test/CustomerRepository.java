@@ -20,15 +20,18 @@ import static java.util.stream.Collectors.toList;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
@@ -44,8 +47,11 @@ import javax.enterprise.context.ApplicationScoped;
 import org.apache.commons.io.IOUtils;
 
 import de.openknowledge.io.reactive.AsynchronousFileChannelPublisher;
+import de.openknowledge.io.reactive.AsynchronousFileChannelSubscriber;
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
+import de.openknowledge.reactive.AbstractSimpleProcessor;
 import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.charset.EncodingProcessor;
 import de.openknowledge.reactive.json.JsonArrayProcessor;
 import de.openknowledge.reactive.json.JsonTokenizer;
 
@@ -131,40 +137,42 @@ public class CustomerRepository {
 
   public Publisher<Integer> save(Publisher<Customer> customers) throws IOException {
     AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
-    AtomicLong offset = new AtomicLong(0);
-    AtomicInteger resultCount = new AtomicInteger(0);
+    CustomerWriter writer = new CustomerWriter();
+    Processor<String, CharBuffer> converter = new AbstractSimpleProcessor<String, CharBuffer>() {
+      private boolean first = true;
+      @Override
+      public void onNext(String item) {
+        if (first) {
+          publish(CharBuffer.wrap(("[" + item).toCharArray()));
+          first = false;
+        } else {
+          publish(CharBuffer.wrap(("," + item).toCharArray()));
+        }
+      }
+
+      public void onComplete() {
+        // TODO publish without request
+        publish(CharBuffer.wrap("]".toCharArray()));
+        super.onComplete();
+      }
+    };
+    EncodingProcessor encoder = new EncodingProcessor(StandardCharsets.UTF_8, 4096);
     SingleItemPublisher<Integer> resultPublisher = new SingleItemPublisher<>();
-    Semaphore writeSemaphore = new Semaphore(1);
-    writeSemaphore.acquireUninterruptibly();
-    fileChannel.write(ByteBuffer.wrap("[".getBytes()), 0, resultPublisher,
-        andThen((count, s) -> {
-          writeSemaphore.release();
-          customers.subscribe(pullEach((Customer customer, Subscription subscription) -> {
-              String json = String.format("%s{\"firstName\": \"%s\", \"lastName\": \"%s\"}", offset.longValue() == 0 ? "" : ",",
-                  customer.getFirstName(), customer.getLastName());
-              offset.addAndGet(count);
-              writeSemaphore.acquireUninterruptibly();
-              fileChannel.write(ByteBuffer.wrap(json.getBytes()), offset.get(), resultPublisher,
-                  andThen((size, c) -> {
-                    writeSemaphore.release();
-                    offset.addAndGet(size);
-                    resultCount.incrementAndGet();
-                    subscription.request(1);
-                  }));
-            }).andThen(() -> {
-              writeSemaphore.acquireUninterruptibly();
-                fileChannel.write(ByteBuffer.wrap("]".getBytes()), offset.longValue(), resultPublisher,
-                    andThen((d, e) -> {
-                      writeSemaphore.release();
-                      try {
-                        fileChannel.close();
-                        resultPublisher.publish(resultCount.intValue());
-                      } catch (IOException error) {
-                        resultPublisher.publish(error);
-                      }
-                    }));
-            }).exceptionally(error -> resultPublisher.publish(error)));
-        }));
+    AsynchronousFileChannelSubscriber fileWriter = new AsynchronousFileChannelSubscriber(fileChannel) {
+      private AtomicInteger count = new AtomicInteger();
+      public void onNext(ByteBuffer buffer) {
+        count.addAndGet(buffer.remaining());
+        super.onNext(buffer);
+      }
+      public void onComplete() {
+        super.onComplete();
+        resultPublisher.publish(count.get());
+      }
+    };
+    customers.subscribe(writer);
+    writer.subscribe(converter);
+    converter.subscribe(encoder);
+    encoder.subscribe(fileWriter);
     return resultPublisher;
   }
 
@@ -184,7 +192,7 @@ public class CustomerRepository {
     DecodingProcessor decoder = new DecodingProcessor(Charset.defaultCharset(), 4096);
     JsonTokenizer tokenizer = new JsonTokenizer();
     JsonArrayProcessor arrayProcessor = new JsonArrayProcessor();
-    CustomerProcessor customerProcessor = new CustomerProcessor();
+    CustomerReader customerProcessor = new CustomerReader();
     filePublisher.subscribe(decoder);
     decoder.subscribe(tokenizer);
     tokenizer.subscribe(arrayProcessor);

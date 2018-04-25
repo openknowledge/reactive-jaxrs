@@ -255,7 +255,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
         readNext();
       } else {
         // TODO proper exception handling
-        throw new JsonParsingException("", null);
+        onError(new JsonParsingException("unhandled character: " + (int)character, null));
       }
     }
   }
