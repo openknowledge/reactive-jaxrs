@@ -31,6 +31,8 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
 
+import org.apache.commons.io.IOUtils;
+
 import de.openknowledge.reactive.charset.DecodingProcessor;
 import de.openknowledge.reactive.json.JsonArrayProcessor;
 import de.openknowledge.reactive.json.JsonTokenizer;
@@ -75,7 +77,8 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
       throw new IllegalArgumentException();
     }
 
-    entityReader.isReadable(targetClass, targetType, annotations, mediaType);
+    // TODO is it really necessary? next readFrom is otherwise blocking, wtf?!
+    entityReader.readFrom(targetClass, targetType, annotations, mediaType, headers, IOUtils.toInputStream(""));
 
     ServletInputStream servletInputStream = null;
     try {
