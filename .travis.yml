@@ -4,7 +4,7 @@ jdk:
 # - openjdk9 # TODO openjdk9 is not available on Ubuntu 15.04, we have to pull 16.04 before build
 env:
   - CONTAINER=wildfly
-  - CONTAINER=payara
+#  - CONTAINER=payara disable until payara supports Java 9
 
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -P $CONTAINER
 script: mvn test -B -P $CONTAINER
