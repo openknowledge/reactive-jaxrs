@@ -14,7 +14,6 @@ package de.openknowledge.jaxrs.reactive;
 
 import static de.openknowledge.jaxrs.reactive.GenericsUtil.getRawType;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -71,7 +70,7 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
     if (entityWriter == null) {
       throw new IllegalArgumentException();
     }
-    entityWriter.writeTo(null, targetClass, targetType, annotations, mediaType, httpHeaders, new ByteArrayOutputStream());
+    entityWriter.isWriteable(targetClass, targetType, annotations, mediaType);
 
     publisher.subscribe(new Flow.Subscriber<Object>() {
       private boolean first = true;
