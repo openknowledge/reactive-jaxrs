@@ -32,7 +32,7 @@ public class AsynchronousFileChannelSubscriber implements Subscriber<ByteBuffer>
   @Override
   public void onNext(ByteBuffer buffer) {
     phaser.register();
-    
+
     channel.write(buffer, filePosition, filePosition, new CompletionHandler<Integer, Long>() {
 
       @Override
@@ -52,6 +52,16 @@ public class AsynchronousFileChannelSubscriber implements Subscriber<ByteBuffer>
 
   @Override
   public void onComplete() {
+    shutdown();
+  }
+
+  @Override
+  public void onError(Throwable error) {
+    // TODO log error
+    shutdown();
+  }
+
+  private void shutdown() {
     try {
       phaser.arriveAndAwaitAdvance();
       phaser.arriveAndDeregister();
@@ -59,11 +69,5 @@ public class AsynchronousFileChannelSubscriber implements Subscriber<ByteBuffer>
     } catch (IOException e) {
       // ignore
     }
-  }
-
-  @Override
-  public void onError(Throwable error) {
-    // TODO log error
-    onComplete();
   }
 }
