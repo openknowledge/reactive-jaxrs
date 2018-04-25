@@ -1,7 +1,12 @@
 <arquillian xmlns="http://jboss.org/schema/arquillian"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://jboss.org/schema/arquillian http://jboss.org/schema/arquillian/arquillian_1_0.xsd">
-  <container qualifier="jbossas-managed" default="true">
+  <container qualifier="jbossas-managed">
+    <configuration>
+      <property name="javaVmArguments">${jacoco.agent}</property>
+    </configuration>
+  </container>
+  <container qualifier="glassfish-embedded">
     <configuration>
       <property name="javaVmArguments">${jacoco.agent}</property>
     </configuration>
