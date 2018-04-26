@@ -8,7 +8,7 @@ TBD
 
 How to integrate the framework
 ==============================
-Use Java 9 to be have the Flow API available, which is required for the library.
+Use Java 9 to have the Flow API available, which is required for the library.
 
 Following types are supported:
 
