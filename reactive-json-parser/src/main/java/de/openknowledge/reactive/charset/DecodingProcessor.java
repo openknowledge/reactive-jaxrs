@@ -28,6 +28,7 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
     charBuffer.reset();
     decoder.decode(buffer, charBuffer, false);
     if (charBuffer.position() == 0) {
+      // TODO check if position 0 is equivalent to null
       super.request(1);
     } else {
       charBuffer.flip();
