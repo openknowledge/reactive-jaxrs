@@ -4,14 +4,11 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
-import java.util.concurrent.Flow.Processor;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
 
-public class EncodingProcessor implements Processor<CharBuffer, ByteBuffer> {
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
-  private Subscription subscription;
-  private Subscriber<? super ByteBuffer> subscriber;
+public class EncodingProcessor extends AbstractSimpleProcessor<CharBuffer, ByteBuffer> {
+
   private CharsetEncoder encoder;
   private CharBuffer charBuffer;
   private ByteBuffer byteBuffer;
@@ -23,55 +20,34 @@ public class EncodingProcessor implements Processor<CharBuffer, ByteBuffer> {
   }
 
   @Override
-  public void onSubscribe(Subscription s) {
-    subscription = s;
-  }
-
-  @Override
   public void onNext(CharBuffer buffer) {
     charBuffer = buffer;
     byteBuffer.position(0);
     byteBuffer.limit(byteBuffer.capacity());
     encoder.encode(charBuffer, byteBuffer, false);
-    if (byteBuffer.position() != 0) {
+    if (byteBuffer.position() == 0) {
+      // TODO check if position 0 is equivalent to null
+      super.request(1);
+    } else {
       byteBuffer.flip();
       byteBuffer.mark();
-      subscriber.onNext(byteBuffer);
+      publish(byteBuffer);
     }
   }
 
   @Override
   public void onComplete() {
     byteBuffer.reset();
-    encoder.encode(charBuffer, byteBuffer, true);
-    encoder.flush(byteBuffer);
+    // TODO error handling
+    if (charBuffer != null) {
+      encoder.encode(charBuffer, byteBuffer, true);
+      encoder.flush(byteBuffer);
+    }
     if (byteBuffer.position() != 0) {
       byteBuffer.flip();
       byteBuffer.mark();
-      subscriber.onNext(byteBuffer);
+      publish(byteBuffer);
     }
-    subscriber.onComplete();
-  }
-
-  @Override
-  public void onError(Throwable error) {
-    subscriber.onError(error);
-  }
-
-  @Override
-  public void subscribe(Subscriber<? super ByteBuffer> s) {
-    subscriber = s;
-    subscriber.onSubscribe(new Subscription() {
-      
-      @Override
-      public void request(long request) {
-        subscription.request(request);
-      }
-      
-      @Override
-      public void cancel() {
-        subscription.cancel();
-      }
-    });
+    super.onComplete();
   }
 }
