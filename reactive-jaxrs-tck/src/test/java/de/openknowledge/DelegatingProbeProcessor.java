@@ -1,6 +1,8 @@
 package de.openknowledge;
 
 import java.util.concurrent.Flow;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification.WhiteboxSubscriberProbe;
 import de.openknowledge.reactive.AbstractSimpleProcessor;
@@ -59,5 +61,14 @@ public class DelegatingProbeProcessor<T, R> extends AbstractSimpleProcessor<T, R
     // in addition to normal Subscriber work that you're testing, register onComplete with the probe
     processor.onComplete();
     probe.registerOnComplete();
+  }
+
+  public static interface VoidAnswer extends Answer<Void> {
+    default Void answer(InvocationOnMock invocation) throws Throwable {
+      execute(invocation);
+      return null;
+    }
+
+    void execute(InvocationOnMock invocation) throws Throwable;
   }
 }
