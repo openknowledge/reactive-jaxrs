@@ -67,6 +67,9 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
   @Override
   public void onError(Throwable e) {
+    if (e == null) {
+      throw new NullPointerException("error may not be null");
+    }
     Subscriber<? super R> s = subscriber;
     if (s != null) {
       s.onError(e);
