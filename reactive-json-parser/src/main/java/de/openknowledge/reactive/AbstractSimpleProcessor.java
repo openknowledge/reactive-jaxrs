@@ -4,6 +4,7 @@ import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongBinaryOperator;
 
 public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
@@ -37,7 +38,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
           s.onError(new IllegalArgumentException("request must be greater than 0, but was " + request));
           return;
         }
-        requested.addAndGet(request);
+        requested.accumulateAndGet(request, add());
         AbstractSimpleProcessor.this.request(request);
       }
 
@@ -75,7 +76,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
   }
 
   protected void publish(R item) {
-    long newRequested = requested.decrementAndGet();
+    long newRequested = requested.accumulateAndGet(1, subtract());
     if (newRequested < 0) {
       throw new IllegalStateException("publish called, but no input was requested");
     }
@@ -90,6 +91,28 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
   }
 
   protected void request(long n) {
-    subscription.request(n);
+    Subscription s = subscription;
+    if (s != null) { // just ignore otherwise
+      subscription.request(n);
+    }
+  }
+
+  private LongBinaryOperator add() {
+    return (oldRequested, addRequested) -> {
+      long newRequested = oldRequested + addRequested;
+      if (newRequested < 0) { // overflow
+        newRequested = Long.MAX_VALUE;
+      }
+      return newRequested;
+    };
+  }
+
+  private LongBinaryOperator subtract() {
+    return (oldRequested, subtractRequested) -> {
+      if (oldRequested == Long.MAX_VALUE) {
+        return oldRequested; // special handling for "request all"
+      }
+      return oldRequested - subtractRequested;
+    };
   }
 }
