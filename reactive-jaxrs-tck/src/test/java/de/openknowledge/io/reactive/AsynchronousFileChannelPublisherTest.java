@@ -4,6 +4,7 @@ import static org.testng.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.StandardOpenOption;
@@ -30,12 +31,8 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
     AsynchronousFileChannelPublisher publisher = null;
     try {
       FileUtils.deleteQuietly(FILE);
-      byte[] content = new byte[Integer.MAX_VALUE / 2];
-      while (elements > Integer.MAX_VALUE / 2L) {
-        FileUtils.writeByteArrayToFile(FILE, content, true);
-        elements -= Integer.MAX_VALUE / 2L;
-      }
-      FileUtils.writeByteArrayToFile(FILE, new byte[(int)elements], true);
+      RandomAccessFile file = new RandomAccessFile(FILE, "rw");
+      file.setLength(elements);
       AsynchronousFileChannel channel = AsynchronousFileChannel.open(FILE.toPath(), StandardOpenOption.READ);
       publisher = new AsynchronousFileChannelPublisher(channel, 1);
     } catch (IOException e) {
