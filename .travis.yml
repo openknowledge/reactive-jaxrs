@@ -5,7 +5,7 @@ jdk:
 
 env:
     global:
-        _JAVA_OPTIONS="-Xmx3072m -Xms512m"
+        _JAVA_OPTIONS="-Xmx2048m -Xms512m"
 
 install: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -P $CONTAINER
 
