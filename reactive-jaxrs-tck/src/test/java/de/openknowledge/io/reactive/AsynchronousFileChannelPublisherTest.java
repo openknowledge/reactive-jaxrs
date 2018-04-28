@@ -30,8 +30,9 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
     AsynchronousFileChannelPublisher publisher = null;
     try {
       FileUtils.deleteQuietly(FILE);
+      byte[] content = new byte[Integer.MAX_VALUE / 2];
       while (elements > Integer.MAX_VALUE / 2L) {
-        FileUtils.writeByteArrayToFile(FILE, new byte[Integer.MAX_VALUE / 2], true);
+        FileUtils.writeByteArrayToFile(FILE, content, true);
         elements -= Integer.MAX_VALUE / 2L;
       }
       FileUtils.writeByteArrayToFile(FILE, new byte[(int)elements], true);
