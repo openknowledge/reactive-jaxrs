@@ -18,7 +18,7 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
   private static final File FILE = new File("target/input.txt");
 
   public AsynchronousFileChannelPublisherTest() {
-    super(new TestEnvironment());
+    super(new TestEnvironment(1000, 1000));
   }
 
   public boolean skipStochasticTests() {
