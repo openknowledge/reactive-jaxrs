@@ -33,6 +33,7 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
       FileUtils.deleteQuietly(FILE);
       RandomAccessFile file = new RandomAccessFile(FILE, "rw");
       file.setLength(elements);
+      file.close();
       AsynchronousFileChannel channel = AsynchronousFileChannel.open(FILE.toPath(), StandardOpenOption.READ);
       publisher = new AsynchronousFileChannelPublisher(channel, 1);
     } catch (IOException e) {
