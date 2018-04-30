@@ -9,14 +9,14 @@ import de.openknowledge.MockPublisher;
 /**
  * @author Christian Schulz - open knowledge GmbH
  */
-public class JsonTokenizerProcessorPublisherTest extends FlowPublisherVerification {
+public class JsonTokenizerProcessorPublisherTest extends FlowPublisherVerification<JsonToken> {
 
   public JsonTokenizerProcessorPublisherTest() {
     super(new TestEnvironment());
   }
 
   @Override
-  public Flow.Publisher createFlowPublisher(long elements) {
+  public Flow.Publisher<JsonToken> createFlowPublisher(long elements) {
     String text = "[{},{},{}]";
     MockPublisher<CharBuffer> source = new MockPublisher<>(elements) {
       @Override
@@ -30,7 +30,7 @@ public class JsonTokenizerProcessorPublisherTest extends FlowPublisherVerificati
   }
 
   @Override
-  public Flow.Publisher createFailedFlowPublisher() {
+  public Flow.Publisher<JsonToken> createFailedFlowPublisher() {
     JsonTokenizer tokenizer = new JsonTokenizer();
     tokenizer.onError(new RuntimeException());
     return tokenizer;

@@ -13,7 +13,7 @@ import de.openknowledge.reactive.AbstractSimpleProcessor;
 public class DelegatingProbeProcessor<T, R> extends AbstractSimpleProcessor<T, R> {
   private final AbstractSimpleProcessor<T, R> processor;
   private final Flow.Subscriber<R> subscriber;
-  private final WhiteboxSubscriberProbe probe;
+  private final WhiteboxSubscriberProbe<T> probe;
 
   public DelegatingProbeProcessor(AbstractSimpleProcessor<T, R> delegated, Flow.Subscriber<R> subscriber, WhiteboxSubscriberProbe<T> probe) {
     this.processor = delegated;
@@ -22,7 +22,7 @@ public class DelegatingProbeProcessor<T, R> extends AbstractSimpleProcessor<T, R
   }
 
   @Override
-  public void onSubscribe(final Flow.Subscription s) {
+  public void onSubscribe(Flow.Subscription s) {
     processor.onSubscribe(s);
 
     // register a successful Subscription, and create a Puppet,
