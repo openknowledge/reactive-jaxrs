@@ -19,8 +19,8 @@
   <artifactId>reactive-jaxrs-tck</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
-  <name>Reactive JSON Parser Implementation</name>
-  <description>Library that provides a reactive JSON parser</description>
+  <name>TCK Tests for Flow classes</name>
+  <description>This library contains the Reactive TCK tests for all Flow classes</description>
 
   <url>http://www.openknowledge.de</url>
   <licenses>

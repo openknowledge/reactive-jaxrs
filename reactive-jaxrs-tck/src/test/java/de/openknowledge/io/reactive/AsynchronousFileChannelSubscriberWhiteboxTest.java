@@ -22,7 +22,7 @@ public class AsynchronousFileChannelSubscriberWhiteboxTest extends FlowSubscribe
   private static final File FILE = new File("target/output.txt");
 
   protected AsynchronousFileChannelSubscriberWhiteboxTest() {
-    super(new TestEnvironment());
+    super(new TestEnvironment(200));
   }
 
   @Override

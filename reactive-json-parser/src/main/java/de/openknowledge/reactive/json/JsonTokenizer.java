@@ -9,14 +9,19 @@ import de.openknowledge.reactive.AbstractSimpleProcessor;
 
 public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken> {
 
+  private static final CharBuffer EMPTY = CharBuffer.wrap("");
   private CharBuffer buffer;
   private StringBuilder value = new StringBuilder();
   private State state = State.END;
   private ProcessState processState = ProcessState.STOPPED;
 
+  public JsonTokenizer() {
+    buffer = EMPTY;
+  }
+
   @Override
   public void onNext(CharBuffer item) {
-    if (item == null || !item.hasRemaining()) {
+    if (!item.hasRemaining()) {
       super.request(1);
       return;
     }
@@ -69,7 +74,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
   }
 
   private void next() {
-    while(processState == ProcessState.RUNNING) {
+    while (processState == ProcessState.RUNNING) {
       processState = ProcessState.STOPPING;
       onNext(buffer);
     }

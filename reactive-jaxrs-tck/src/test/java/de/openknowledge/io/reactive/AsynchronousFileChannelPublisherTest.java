@@ -1,50 +1,65 @@
 package de.openknowledge.io.reactive;
 
-import static org.testng.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
-import java.nio.file.StandardOpenOption;
+import java.nio.channels.CompletionHandler;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.io.FileUtils;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.reactivestreams.tck.TestEnvironment;
 import org.reactivestreams.tck.flow.FlowPublisherVerification;
 
 public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerification<ByteBuffer> {
 
-  private static final File FILE = new File("target/input.txt");
+  private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
   public AsynchronousFileChannelPublisherTest() {
-    super(new TestEnvironment());
+    super(new TestEnvironment(200));
   }
 
   public boolean skipStochasticTests() {
-	return true;
+    return true;
   }
 
   @Override
   public Publisher<ByteBuffer> createFlowPublisher(long elements) {
-    AsynchronousFileChannelPublisher publisher = null;
-    try {
-      FileUtils.deleteQuietly(FILE);
-      while (elements > Integer.MAX_VALUE / 2L) {
-        FileUtils.writeByteArrayToFile(FILE, new byte[Integer.MAX_VALUE / 2], true);
-        elements -= Integer.MAX_VALUE / 2L;
-      }
-      FileUtils.writeByteArrayToFile(FILE, new byte[(int)elements], true);
-      AsynchronousFileChannel channel = AsynchronousFileChannel.open(FILE.toPath(), StandardOpenOption.READ);
-      publisher = new AsynchronousFileChannelPublisher(channel, 1);
-    } catch (IOException e) {
-      fail(e.getMessage(), e);
-    }
-    return publisher;
+    AsynchronousFileChannel channel = mock(AsynchronousFileChannel.class);
+    doAnswer(new AsynchronousReadAnswer(elements)).when(channel).read(any(), anyLong(), any(), any());
+    return new AsynchronousFileChannelPublisher(channel, 1);
   }
 
   @Override
   public Publisher<ByteBuffer> createFailedFlowPublisher() {
     return null;
+  }
+
+  private class AsynchronousReadAnswer implements Answer<Void> {
+
+    private AtomicLong remainingElements = new AtomicLong();
+
+    public AsynchronousReadAnswer(long elements) {
+      remainingElements.set(elements);
+    }
+
+    @Override
+    public Void answer(InvocationOnMock invocation) throws Throwable {
+      long elements = remainingElements.getAndDecrement();
+      CompletionHandler<Integer, Long> handler = invocation.getArgument(3);
+      if (elements == 0) {
+        executorService.execute(() -> handler.completed(-1, invocation.getArgument(2)));
+      } else {
+        executorService.execute(() -> handler.completed(1, invocation.getArgument(2)));
+      }
+      return null;
+    }
   }
 }
