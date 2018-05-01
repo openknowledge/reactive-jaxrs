@@ -6,23 +6,11 @@ import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongBinaryOperator;
 
-public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
+public abstract class AbstractSimpleProcessor<T, R> extends AbstractSubscriber<T> implements Processor<T, R> {
 
-  private Subscription subscription;
   private Subscriber<? super R> subscriber;
   private AtomicLong requested = new AtomicLong();
   private Throwable error;
-
-  @Override
-  public void onSubscribe(Subscription s) {
-    if (s == null) {
-      throw new NullPointerException("subscription may not be null");
-    } else if (subscription != null) {
-      s.cancel();
-    } else {
-      subscription = s;
-    }
-  }
 
   @Override
   public void subscribe(Subscriber<? super R> s) {
@@ -31,7 +19,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
       @Override
       public void request(long request) {
-        if (subscription == null) {
+        if (!hasSubscription()) {
           return;
         }
         if (request <= 0) {
@@ -44,11 +32,10 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
       @Override
       public void cancel() {
-        if (subscription == null) {
+        if (!hasSubscription()) {
           return;
         }
-        subscription.cancel();
-        subscription = null;
+        AbstractSimpleProcessor.super.cancel();
         subscriber = null;
       }
     });
@@ -67,9 +54,7 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
   @Override
   public void onError(Throwable e) {
-    if (e == null) {
-      throw new NullPointerException("error may not be null");
-    }
+    super.onError(e);
     Subscriber<? super R> s = subscriber;
     if (s != null) {
       s.onError(e);
@@ -91,13 +76,6 @@ public abstract class AbstractSimpleProcessor<T, R> implements Processor<T, R> {
 
   protected boolean isRequested() {
     return requested.get() > 0;
-  }
-
-  protected void request(long n) {
-    Subscription s = subscription;
-    if (s != null) { // just ignore otherwise
-      subscription.request(n);
-    }
   }
 
   private LongBinaryOperator add() {
