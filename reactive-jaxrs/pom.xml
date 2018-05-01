@@ -65,8 +65,8 @@
 
     <!-- Test -->
     <dependency>
-      <groupId>de.openknowledge.io</groupId>
-      <artifactId>reactive-io</artifactId>
+      <groupId>de.openknowledge.reactive</groupId>
+      <artifactId>commons-reactive</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
