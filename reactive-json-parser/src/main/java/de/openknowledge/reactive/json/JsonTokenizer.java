@@ -5,7 +5,7 @@ import java.nio.CharBuffer;
 
 import javax.json.stream.JsonParsingException;
 
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken> {
 

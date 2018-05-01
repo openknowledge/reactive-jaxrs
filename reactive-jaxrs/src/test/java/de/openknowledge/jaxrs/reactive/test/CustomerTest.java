@@ -41,8 +41,8 @@ import org.junit.runner.RunWith;
 import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
 import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
-import de.openknowledge.reactive.AbstractSimpleProcessor;
 import de.openknowledge.reactive.charset.DecodingProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 import de.openknowledge.reactive.commons.io.AsynchronousFileChannelPublisher;
 import de.openknowledge.reactive.json.JsonTokenizer;
 

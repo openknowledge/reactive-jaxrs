@@ -47,9 +47,9 @@ import javax.enterprise.context.ApplicationScoped;
 import org.apache.commons.io.IOUtils;
 
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
-import de.openknowledge.reactive.AbstractSimpleProcessor;
 import de.openknowledge.reactive.charset.DecodingProcessor;
 import de.openknowledge.reactive.charset.EncodingProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 import de.openknowledge.reactive.commons.io.AsynchronousFileChannelPublisher;
 import de.openknowledge.reactive.commons.io.AsynchronousFileChannelSubscriber;
 import de.openknowledge.reactive.json.JsonArrayProcessor;

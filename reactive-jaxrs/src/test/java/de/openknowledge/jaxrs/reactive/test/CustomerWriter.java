@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 public class CustomerWriter extends AbstractSimpleProcessor<Customer, String> {
 

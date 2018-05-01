@@ -1,4 +1,4 @@
-package de.openknowledge.reactive;
+package de.openknowledge.reactive.commons;
 
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;

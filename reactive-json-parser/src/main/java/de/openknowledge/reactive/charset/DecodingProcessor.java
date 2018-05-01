@@ -5,7 +5,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharBuffer> {
 
