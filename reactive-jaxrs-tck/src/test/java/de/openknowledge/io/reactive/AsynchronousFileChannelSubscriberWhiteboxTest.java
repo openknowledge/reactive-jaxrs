@@ -16,6 +16,8 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.reactivestreams.tck.flow.FlowSubscriberWhiteboxVerification;
 import org.testng.annotations.Test;
 
+import de.openknowledge.reactive.commons.io.AsynchronousFileChannelSubscriber;
+
 @Test
 public class AsynchronousFileChannelSubscriberWhiteboxTest extends FlowSubscriberWhiteboxVerification<ByteBuffer> {
 

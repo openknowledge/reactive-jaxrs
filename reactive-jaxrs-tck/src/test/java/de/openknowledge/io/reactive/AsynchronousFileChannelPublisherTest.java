@@ -18,6 +18,8 @@ import org.mockito.stubbing.Answer;
 import org.reactivestreams.tck.TestEnvironment;
 import org.reactivestreams.tck.flow.FlowPublisherVerification;
 
+import de.openknowledge.reactive.commons.io.AsynchronousFileChannelPublisher;
+
 public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerification<ByteBuffer> {
 
   private ExecutorService executorService = Executors.newFixedThreadPool(1);

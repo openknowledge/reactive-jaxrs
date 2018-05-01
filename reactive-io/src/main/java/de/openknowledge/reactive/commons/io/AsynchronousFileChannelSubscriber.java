@@ -1,4 +1,4 @@
-package de.openknowledge.io.reactive;
+package de.openknowledge.reactive.commons.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

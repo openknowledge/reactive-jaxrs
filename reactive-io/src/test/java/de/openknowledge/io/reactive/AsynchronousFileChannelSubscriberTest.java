@@ -17,6 +17,8 @@ import java.util.concurrent.Flow.Subscription;
 
 import org.junit.jupiter.api.Test;
 
+import de.openknowledge.reactive.commons.io.AsynchronousFileChannelSubscriber;
+
 public class AsynchronousFileChannelSubscriberTest {
 
   @Test
