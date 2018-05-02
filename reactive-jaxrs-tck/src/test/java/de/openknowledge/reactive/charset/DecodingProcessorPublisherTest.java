@@ -17,7 +17,7 @@ public class DecodingProcessorPublisherTest extends FlowPublisherVerification<Ch
   }
 
   public boolean skipStochasticTests() {
-	return true;
+    return true;
   }
 
   @Override

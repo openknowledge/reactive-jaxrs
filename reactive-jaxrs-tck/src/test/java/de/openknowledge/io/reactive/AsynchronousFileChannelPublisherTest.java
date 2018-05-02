@@ -25,7 +25,7 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
   private ExecutorService executorService = Executors.newFixedThreadPool(1);
 
   public AsynchronousFileChannelPublisherTest() {
-    super(new TestEnvironment(200));
+    super(new TestEnvironment(300));
   }
 
   public boolean skipStochasticTests() {
