@@ -17,6 +17,10 @@ public class SimpleSubscription<R> implements Subscription {
   private AtomicLong requested = new AtomicLong();
   private Throwable error;
 
+  public SimpleSubscription(Consumer<Long> requestConsumer, Runnable cancelProcessor) {
+    this(() -> true, requestConsumer, cancelProcessor);
+  }
+
   public SimpleSubscription(Supplier<Boolean> activeCheck, Consumer<Long> requestConsumer, Runnable cancelProcessor) {
     this.activeCheck = notNull(activeCheck, "activeCheck");
     this.requestConsumer = notNull(requestConsumer, "requestConsumer");
