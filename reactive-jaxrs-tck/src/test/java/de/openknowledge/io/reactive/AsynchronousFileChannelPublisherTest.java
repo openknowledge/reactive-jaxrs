@@ -1,10 +1,12 @@
 package de.openknowledge.io.reactive;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
@@ -35,7 +37,13 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
   @Override
   public Publisher<ByteBuffer> createFlowPublisher(long elements) {
     AsynchronousFileChannel channel = mock(AsynchronousFileChannel.class);
-    doAnswer(new AsynchronousReadAnswer(elements)).when(channel).read(any(), anyLong(), any(), any());
+    AsynchronousReadAnswer asynchronousReadAnswer = new AsynchronousReadAnswer(elements);
+    doAnswer(asynchronousReadAnswer).when(channel).read(any(), anyLong(), any(), any());
+    try {
+      doAnswer(asynchronousReadAnswer.close()).when(channel).close();
+    } catch (IOException e) {
+      fail(e.getMessage(), e);
+    }
     return new AsynchronousFileChannelPublisher(channel, 1);
   }
 
@@ -62,6 +70,19 @@ public class AsynchronousFileChannelPublisherTest extends FlowPublisherVerificat
         executorService.execute(() -> handler.completed(1, invocation.getArgument(2)));
       }
       return null;
+    }
+
+    public Close close() {
+      return new Close();
+    }
+
+    public class Close implements Answer<Void> {
+
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        remainingElements.set(0);
+        return null;
+      }
     }
   }
 }
