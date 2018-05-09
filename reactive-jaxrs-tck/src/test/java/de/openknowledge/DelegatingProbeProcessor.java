@@ -1,11 +1,13 @@
 package de.openknowledge;
 
 import java.util.concurrent.Flow;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification.WhiteboxSubscriberProbe;
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 /**
  * @author Christian Schulz - open knowledge GmbH

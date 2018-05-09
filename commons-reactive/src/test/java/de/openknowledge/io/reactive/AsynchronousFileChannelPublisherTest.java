@@ -17,6 +17,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
+import de.openknowledge.reactive.commons.io.AsynchronousFileChannelPublisher;
+
 public class AsynchronousFileChannelPublisherTest {
 
   @Test

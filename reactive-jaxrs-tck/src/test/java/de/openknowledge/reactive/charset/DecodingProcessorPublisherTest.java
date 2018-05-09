@@ -13,11 +13,11 @@ import de.openknowledge.MockPublisher;
 public class DecodingProcessorPublisherTest extends FlowPublisherVerification<CharBuffer> {
 
   public DecodingProcessorPublisherTest() {
-    super(new TestEnvironment());
+    super(new TestEnvironment(200));
   }
 
   public boolean skipStochasticTests() {
-	return true;
+    return true;
   }
 
   @Override

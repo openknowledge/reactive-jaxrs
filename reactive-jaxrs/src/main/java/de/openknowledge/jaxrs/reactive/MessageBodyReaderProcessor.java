@@ -10,7 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 public class MessageBodyReaderProcessor<R> extends AbstractSimpleProcessor<String, R> {
 

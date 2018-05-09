@@ -3,7 +3,7 @@ package de.openknowledge.reactive.json;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import de.openknowledge.reactive.AbstractSimpleProcessor;
+import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
 
 public class JsonArrayProcessor extends AbstractSimpleProcessor<JsonToken, String> {
 

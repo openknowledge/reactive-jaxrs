@@ -32,7 +32,7 @@
   </licenses>
 
   <modules>
-    <module>reactive-io</module>
+    <module>commons-reactive</module>
     <module>reactive-json-parser</module>
     <module>reactive-jaxrs</module>
     <module>reactive-jaxrs-tck</module>
