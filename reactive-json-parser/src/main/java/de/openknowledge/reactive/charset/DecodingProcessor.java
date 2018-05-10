@@ -48,7 +48,8 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
     } else if (isRequested()) {
       publish(charBuffer);
     } else {
-      // TODO wait for input
+      throw new IllegalStateException("Should not happen");
+      // TODO what shall we do? We have remaining items but no one requested them, I think it should not happen
     }
   }
 }

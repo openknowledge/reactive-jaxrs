@@ -43,11 +43,15 @@ public class EncodingProcessor extends AbstractSimpleProcessor<CharBuffer, ByteB
       encoder.encode(charBuffer, byteBuffer, true);
       encoder.flush(byteBuffer);
     }
-    if (byteBuffer.position() != 0) {
+    if (!byteBuffer.hasRemaining()) {
+      super.onComplete();
+    } else if (isRequested()) {
       byteBuffer.flip();
       byteBuffer.mark();
       publish(byteBuffer);
+    } else {
+      throw new IllegalStateException("Should not happen");
+      // TODO what shall we do? We have remaining items but no one requested them, I think it should not happen
     }
-    super.onComplete();
   }
 }
