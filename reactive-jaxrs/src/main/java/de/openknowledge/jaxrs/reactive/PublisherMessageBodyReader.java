@@ -23,7 +23,6 @@ import java.util.concurrent.Flow;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -58,7 +57,7 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
                                     Annotation[] annotations,
                                     MediaType mediaType,
                                     MultivaluedMap<String, String> headers,
-                                    InputStream inputStream) throws IOException, WebApplicationException {
+                                    InputStream inputStream) throws IOException {
     Type targetType = ((ParameterizedType) type).getActualTypeArguments()[0];
 
     Class targetClass;

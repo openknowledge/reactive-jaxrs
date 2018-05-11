@@ -5,7 +5,7 @@ import java.util.concurrent.Flow.Subscriber;
 
 public abstract class AbstractSimpleProcessor<T, R> extends AbstractSubscriber<T> implements Processor<T, R> {
 
-  private final SimpleSubscription<R> subscription = new SimpleSubscription<R>(this::hasSubscription, this::request, this::cancel);
+  private final SimpleSubscription<R> subscription = new SimpleSubscription<>(this::hasSubscription, this::request, this::cancel);
 
   @Override
   public void subscribe(Subscriber<? super R> s) {

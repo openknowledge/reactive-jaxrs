@@ -1,4 +1,5 @@
 package de.openknowledge.jaxrs.reactive;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -12,6 +13,10 @@ import java.util.Arrays;
  * @author Christian Schulz - open knowledge GmbH
  */
 public class GenericsUtil {
+
+  private GenericsUtil() {
+  }
+
   public static <V> Class<V> fromGenericType(Class<?> subclass, Class<?> superclass) {
     return fromGenericType(subclass, null, superclass, 0);
   }
@@ -54,12 +59,13 @@ public class GenericsUtil {
     }
     return (Class<V>)valueType;
   }
+
   private static Class<?> getDirectSubclass(Class<?> subclass, Class<?> superclass) {
     if (!superclass.isAssignableFrom(subclass)) {
       throw new IllegalStateException(subclass.getSimpleName() + " is no subclass of " + superclass.getSimpleName());
     }
     if (superclass.isInterface()) {
-      for (Class<?> iface: subclass.getInterfaces()) {
+      for (Class<?> iface : subclass.getInterfaces()) {
         if (iface.equals(superclass)) {
           return subclass;
         }
@@ -71,6 +77,7 @@ public class GenericsUtil {
     }
     return subclass;
   }
+
   private static Type getGenericSuperclass(Class<?> subclass, Class<?> superclass) {
     if (!superclass.isInterface()) {
       return subclass.getGenericSuperclass();
@@ -78,224 +85,195 @@ public class GenericsUtil {
     int index = Arrays.asList(subclass.getInterfaces()).indexOf(superclass);
     return subclass.getGenericInterfaces()[index];
   }
-  public static ParameterizedType getParameterizedType(Type type)
-  {
-    if (type instanceof ParameterizedType)
-    {
+
+  public static ParameterizedType getParameterizedType(Type type) {
+    if (type instanceof ParameterizedType) {
       return (ParameterizedType)type;
-    }
-    else if (type instanceof Class)
-    {
+    } else if (type instanceof Class) {
       Class<?> classType = (Class<?>)type;
       return new OwbParametrizedTypeImpl(classType.getDeclaringClass(), classType, classType.getTypeParameters());
-    }
-    else
-    {
+    } else {
       throw new IllegalArgumentException(type.getClass().getSimpleName() + " is not supported");
     }
   }
-  public static <T> Class<T> getRawType(Type type)
-  {
+
+  public static <T> Class<T> getRawType(Type type) {
     return getRawType(type, null);
   }
-  static <T> Class<T> getRawType(Type type, Type actualType)
-  {
-    if (type instanceof Class)
-    {
+
+  static <T> Class<T> getRawType(Type type, Type actualType) {
+    if (type instanceof Class) {
       return (Class<T>)type;
-    }
-    else if (type instanceof ParameterizedType)
-    {
+    } else if (type instanceof ParameterizedType) {
       ParameterizedType parameterizedType = (ParameterizedType)type;
       return getRawType(parameterizedType.getRawType(), actualType);
-    }
-    else if (type instanceof TypeVariable)
-    {
+    } else if (type instanceof TypeVariable) {
       TypeVariable<?> typeVariable = (TypeVariable<?>)type;
       Type mostSpecificType = getMostSpecificType(getRawTypes(typeVariable.getBounds(), actualType), typeVariable.getBounds());
       return getRawType(mostSpecificType, actualType);
-    }
-    else if (type instanceof WildcardType)
-    {
+    } else if (type instanceof WildcardType) {
       WildcardType wildcardType = (WildcardType)type;
       Type mostSpecificType = getMostSpecificType(getRawTypes(wildcardType.getUpperBounds(), actualType), wildcardType.getUpperBounds());
       return getRawType(mostSpecificType, actualType);
-    }
-    else if (type instanceof GenericArrayType)
-    {
+    } else if (type instanceof GenericArrayType) {
       GenericArrayType arrayType = (GenericArrayType)type;
       return getRawType(createArrayType(getRawType(arrayType.getGenericComponentType(), actualType)), actualType);
-    }
-    else
-    {
+    } else {
       throw new IllegalArgumentException("Unsupported type " + type.getClass().getName());
     }
   }
-  private static <T> Class<T>[] getRawTypes(Type[] types, Type actualType)
-  {
+
+  private static <T> Class<T>[] getRawTypes(Type[] types, Type actualType) {
     Class<T>[] rawTypes = new Class[types.length];
-    for (int i = 0; i < types.length; i++)
-    {
+    for (int i = 0; i < types.length; i++) {
       rawTypes[i] = getRawType(types[i], actualType);
     }
     return rawTypes;
   }
-  private static Type getMostSpecificType(Class<?>[] types, Type[] genericTypes)
-  {
+
+  private static Type getMostSpecificType(Class<?>[] types, Type[] genericTypes) {
     Class<?> mostSpecificType = types[0];
     int mostSpecificIndex = 0;
-    for (int i = 0; i < types.length; i++)
-    {
-      if (mostSpecificType.isAssignableFrom(types[i]))
-      {
+    for (int i = 0; i < types.length; i++) {
+      if (mostSpecificType.isAssignableFrom(types[i])) {
         mostSpecificType = types[i];
         mostSpecificIndex = i;
       }
     }
     return genericTypes[mostSpecificIndex];
   }
-  private static Type createArrayType(Type componentType)
-  {
-    if (componentType instanceof Class)
-    {
+
+  private static Type createArrayType(Type componentType) {
+    if (componentType instanceof Class) {
       return Array.newInstance((Class<?>)componentType, 0).getClass();
-    }
-    else
-    {
+    } else {
       return new OwbGenericArrayTypeImpl(componentType);
     }
   }
-  public static class OwbGenericArrayTypeImpl implements GenericArrayType
-  {
+
+  public static class OwbGenericArrayTypeImpl implements GenericArrayType {
+
     private Type componentType;
-    public OwbGenericArrayTypeImpl(Type componentType)
-    {
+
+    public OwbGenericArrayTypeImpl(Type componentType) {
       this.componentType = componentType;
     }
+
     @Override
-    public Type getGenericComponentType()
-    {
+    public Type getGenericComponentType() {
       return componentType;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
       return componentType.hashCode();
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
-    public boolean equals(Object obj)
-    {
-      if (this == obj)
-      {
+    public boolean equals(Object obj) {
+      if (this == obj) {
         return true;
-      }
-      else if (obj instanceof GenericArrayType)
-      {
+      } else if (obj instanceof GenericArrayType) {
         return ((GenericArrayType)obj).getGenericComponentType().equals(componentType);
-      }
-      else
-      {
+      } else {
         return false;
       }
     }
-    public String toString()
-    {
+
+    public String toString() {
       return componentType + "[]";
     }
   }
-  public static class OwbParametrizedTypeImpl implements ParameterizedType
-  {
-    /**Owner type*/
+
+  public static class OwbParametrizedTypeImpl implements ParameterizedType {
+
+    /**
+     * Owner type
+     */
     private final Type owner;
-    /**Raw type*/
+    /**
+     * Raw type
+     */
     private final Type rawType;
-    /**Actual type arguments*/
+    /**
+     * Actual type arguments
+     */
     private final Type[] types;
+
     /**
      * New instance.
+     *
      * @param owner owner
-     * @param raw raw
+     * @param raw   raw
      */
-    public OwbParametrizedTypeImpl(Type owner, Type raw, Type... types)
-    {
+    public OwbParametrizedTypeImpl(Type owner, Type raw, Type... types) {
       this.owner = owner;
       rawType = raw;
       this.types = types;
     }
+
     @Override
-    public Type[] getActualTypeArguments()
-    {
+    public Type[] getActualTypeArguments() {
       return types.clone();
     }
+
     @Override
-    public Type getOwnerType()
-    {
+    public Type getOwnerType() {
       return owner;
     }
+
     @Override
-    public Type getRawType()
-    {
+    public Type getRawType() {
       return rawType;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
       return Arrays.hashCode(types) ^ (owner == null ? 0 : owner.hashCode()) ^ (rawType == null ? 0 : rawType.hashCode());
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
-    public boolean equals(Object obj)
-    {
-      if (this == obj)
-      {
+    public boolean equals(Object obj) {
+      if (this == obj) {
         return true;
-      }
-      else if (obj instanceof ParameterizedType)
-      {
-        ParameterizedType that = (ParameterizedType) obj;
+      } else if (obj instanceof ParameterizedType) {
+        ParameterizedType that = (ParameterizedType)obj;
         Type thatOwnerType = that.getOwnerType();
         Type thatRawType = that.getRawType();
         return (owner == null ? thatOwnerType == null : owner.equals(thatOwnerType))
           && (rawType == null ? thatRawType == null : rawType.equals(thatRawType))
           && Arrays.equals(types, that.getActualTypeArguments());
-      }
-      else
-      {
+      } else {
         return false;
       }
     }
-    public String toString()
-    {
+
+    public String toString() {
       StringBuilder buffer = new StringBuilder();
-      buffer.append(((Class<?>) rawType).getSimpleName());
+      buffer.append(((Class<?>)rawType).getSimpleName());
       Type[] actualTypes = getActualTypeArguments();
-      if(actualTypes.length > 0)
-      {
+      if (actualTypes.length > 0) {
         buffer.append("<");
         int length = actualTypes.length;
-        for(int i=0;i<length;i++)
-        {
-          if (actualTypes[i] instanceof Class)
-          {
+        for (int i = 0; i < length; i++) {
+          if (actualTypes[i] instanceof Class) {
             buffer.append(((Class<?>)actualTypes[i]).getSimpleName());
-          }
-          else
-          {
+          } else {
             buffer.append(actualTypes[i].toString());
           }
-          if(i != actualTypes.length-1)
-          {
+          if (i != actualTypes.length - 1) {
             buffer.append(",");
           }
         }

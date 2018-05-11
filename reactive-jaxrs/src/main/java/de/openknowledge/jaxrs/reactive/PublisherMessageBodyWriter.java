@@ -26,7 +26,6 @@ import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -55,7 +54,8 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
   }
 
   @Override
-  public void writeTo(Flow.Publisher<?> publisher, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+  public void writeTo(Flow.Publisher<?> publisher, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                      MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
 
     AsyncContext asyncContext;
     if (!request.isAsyncStarted()) {
@@ -75,6 +75,7 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
 
     publisher.subscribe(new Flow.Subscriber<Object>() {
       private boolean first = true;
+
       @Override
       public void onSubscribe(Flow.Subscription subscription) {
         try {
@@ -107,7 +108,8 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
           } else {
             outputStream.print(',');
           }
-          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, new NonClosableOutputStream(outputStream));
+          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, new NonClosableOutputStream
+            (outputStream));
           outputStream.flush();
 
         } catch (IOException e) {

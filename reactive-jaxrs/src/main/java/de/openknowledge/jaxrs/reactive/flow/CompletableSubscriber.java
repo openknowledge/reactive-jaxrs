@@ -59,11 +59,11 @@ public interface CompletableSubscriber<T> extends Subscriber<T> {
       }
     };
   }
-  
+
   default CompletableSubscriber<T> andThen(Runnable runnable) {
     CompletableSubscriber<T> thisSubscriber = this;
     return new AbstractCompletableSubscriber<T>() {
-      
+
       @Override
       public void onSubscribe(Subscription subscription) {
         thisSubscriber.onSubscribe(subscription);
@@ -85,11 +85,11 @@ public interface CompletableSubscriber<T> extends Subscriber<T> {
       }
     };
   }
-  
+
   default CompletableSubscriber<T> exceptionally(Consumer<Throwable> consumer) {
     CompletableSubscriber<T> thisSubscriber = this;
     return new AbstractCompletableSubscriber<T>() {
-      
+
       @Override
       public void onSubscribe(Subscription subscription) {
         thisSubscriber.onSubscribe(subscription);
@@ -112,7 +112,7 @@ public interface CompletableSubscriber<T> extends Subscriber<T> {
     };
   }
 
-  static abstract class AbstractCompletableSubscriber<T> implements CompletableSubscriber<T> {
+  abstract static class AbstractCompletableSubscriber<T> implements CompletableSubscriber<T> {
 
     Subscription subscription;
 
@@ -127,6 +127,6 @@ public interface CompletableSubscriber<T> extends Subscriber<T> {
 
     @Override
     public void onError(Throwable error) {
-    }      
+    }
   }
 }

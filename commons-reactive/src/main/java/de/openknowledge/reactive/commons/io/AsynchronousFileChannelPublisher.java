@@ -12,7 +12,7 @@ import de.openknowledge.reactive.commons.SimpleSubscription;
 
 public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
 
-  private final SimpleSubscription<ByteBuffer> subscription = new SimpleSubscription<>(this::request, this::cancel); 
+  private final SimpleSubscription<ByteBuffer> subscription = new SimpleSubscription<>(elements -> request(), this::cancel);
   private AsynchronousFileChannel channel;
   private ByteBuffer buffer;
   private AtomicReference<Long> filePosition = new AtomicReference<>(0L);
@@ -39,7 +39,7 @@ public class AsynchronousFileChannelPublisher implements Publisher<ByteBuffer> {
     }
   }
 
-  private void request(long elements) {
+  private void request() {
     read();
   }
 
