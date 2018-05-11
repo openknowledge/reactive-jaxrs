@@ -1,14 +1,9 @@
 <arquillian xmlns="http://jboss.org/schema/arquillian"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://jboss.org/schema/arquillian http://jboss.org/schema/arquillian/arquillian_1_0.xsd">
-  <container qualifier="jbossas-managed">
+  <container qualifier="widlfly-managed" default="true">
     <configuration>
-      <property name="javaVmArguments">${jacoco.agent}</property>
-    </configuration>
-  </container>
-  <container qualifier="glassfish-embedded">
-    <configuration>
-      <property name="javaVmArguments">${jacoco.agent}</property>
+      <property name="javaVmArguments">${argLine}</property>
     </configuration>
   </container>
 </arquillian>

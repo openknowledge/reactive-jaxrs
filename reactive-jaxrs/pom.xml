@@ -139,10 +139,6 @@
             <goals>
               <goal>prepare-agent</goal>
             </goals>
-            <configuration>
-              <propertyName>jacoco.agent</propertyName>
-              <append>true</append>
-            </configuration>
           </execution>
           <execution>
             <id>default-report</id>
