@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import de.openknowledge.jaxrs.reactive.PublisherMessageBodyReader;
-import de.openknowledge.jaxrs.reactive.converter.JsonConverter;
 import de.openknowledge.jaxrs.reactive.flow.SingleItemPublisher;
 import de.openknowledge.reactive.charset.DecodingProcessor;
 import de.openknowledge.reactive.commons.AbstractSimpleProcessor;
@@ -59,7 +58,6 @@ public class CustomerTest {
     return ShrinkWrap.create(WebArchive.class)
       .addPackage(SingleItemPublisher.class.getPackage())
       .addPackage(Customer.class.getPackage())
-      .addPackage(JsonConverter.class.getPackage())
       .addPackage(PublisherMessageBodyReader.class.getPackage())
       .addPackage(DecodingProcessor.class.getPackage())
       .addPackage(AbstractSimpleProcessor.class.getPackage())
