@@ -12,6 +12,7 @@ public class EncodingProcessor extends AbstractSimpleProcessor<CharBuffer, ByteB
   private CharsetEncoder encoder;
   private CharBuffer charBuffer;
   private ByteBuffer byteBuffer;
+  private boolean finished;
 
   public EncodingProcessor(Charset charset, int bufferSize) {
     encoder = charset.newEncoder();
@@ -45,13 +46,24 @@ public class EncodingProcessor extends AbstractSimpleProcessor<CharBuffer, ByteB
     }
     if (!byteBuffer.hasRemaining()) {
       super.onComplete();
-    } else if (isRequested()) {
+    } else {
       byteBuffer.flip();
       byteBuffer.mark();
+      finished = true;
+      if (isRequested()) {
+        publish(byteBuffer);
+        super.onComplete();
+      }
+    }
+  }
+
+  @Override
+  public void request(long requested) {
+    if (finished) {
       publish(byteBuffer);
+      super.onComplete();
     } else {
-      throw new IllegalStateException("Should not happen");
-      // TODO what shall we do? We have remaining items but no one requested them, I think it should not happen
+      super.request(requested);
     }
   }
 }

@@ -73,8 +73,8 @@ public class SimpleSubscription<R> implements Subscription {
     Subscriber<? super R> s = subscriber;
     if (s != null) {
       s.onError(e);
-      subscriber = null;
     }
+    subscriber = null;
   }
 
   public void complete() {
@@ -82,6 +82,7 @@ public class SimpleSubscription<R> implements Subscription {
     if (s != null) {
       s.onComplete();
     }
+    subscriber = null;
   }
 
   @Override
