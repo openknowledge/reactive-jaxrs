@@ -27,27 +27,31 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
     }
     buffer = item;
     char character = buffer.get();
-    switch (state) {
-    case IN_STRING:
-      readString(character);
-      break;
-    case IN_ESCAPE_SEQUENCE:
-      readEscapeSequence(character);
-      break;
-    case IN_NUMBER:
-      readNumber(character);
-      break;
-    case IN_TRUE:
-      readKeyword("true", Character.toLowerCase(character));
-      break;
-    case IN_FALSE:
-      readKeyword("false", Character.toLowerCase(character));
-      break;
-    case IN_NULL:
-      readKeyword("null", Character.toLowerCase(character));
-      break;
-    default:
-      readToken(character);
+    try {
+      switch (state) {
+        case IN_STRING:
+          readString(character);
+          break;
+        case IN_ESCAPE_SEQUENCE:
+          readEscapeSequence(character);
+          break;
+        case IN_NUMBER:
+          readNumber(character);
+          break;
+        case IN_TRUE:
+          readKeyword("true", Character.toLowerCase(character));
+          break;
+        case IN_FALSE:
+          readKeyword("false", Character.toLowerCase(character));
+          break;
+        case IN_NULL:
+          readKeyword("null", Character.toLowerCase(character));
+          break;
+        default:
+          readToken(character);
+      }
+    } catch (Exception e) {
+      onError(e);
     }
   }
 
@@ -132,13 +136,11 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
         value.append(character);
         break;
       default:
-        // TODO proper exception handling
-        throw new JsonParsingException("", null);
+        throw new JsonParsingException("Unhandled / unknown escaping char '" + (int)character + "'", null);
       }
     } else {
       if (character < '0' || character > '9') {
-        // TODO proper exception handling
-        throw new JsonParsingException("", null);
+        throw new JsonParsingException("Unhandled / unknown escaping char '" + (int)character + "'", null);
       }
       value.append(character);
       if (value.charAt(value.length() - 6) == '\\' && value.charAt(value.length() - 5) == 'u') {
@@ -184,7 +186,6 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
     try {
       decimal = new BigDecimal(number);
     } catch (NumberFormatException e) {
-      // TODO correct error handling
       throw new JsonParsingException("", e, null);
     }
     state = State.END;
@@ -193,8 +194,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
 
   private void readKeyword(String keyword, char character) {
     if (character != keyword.charAt(value.length())) {
-      // TODO correct exception handling
-      throw new JsonParsingException("", null);
+      throw new JsonParsingException("Keyword " + keyword + " does not match character '" + (int)character + "'", null);
     }
     value.append(character);
     if (keyword.length() == value.length()) {
@@ -259,8 +259,7 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
       if (Character.isWhitespace(character)) {
         readNext();
       } else {
-        // TODO proper exception handling
-        onError(new JsonParsingException("unhandled character: " + (int)character, null));
+        throw new JsonParsingException("Unhandled character '" + (int)character + "'", null);
       }
     }
   }
@@ -275,10 +274,10 @@ public class JsonTokenizer extends AbstractSimpleProcessor<CharBuffer, JsonToken
   }
 
   private enum State {
-    IN_STRING, IN_ESCAPE_SEQUENCE, IN_NUMBER, IN_TRUE, IN_FALSE, IN_NULL, END;
+    IN_STRING, IN_ESCAPE_SEQUENCE, IN_NUMBER, IN_TRUE, IN_FALSE, IN_NULL, END
   }
 
   private enum ProcessState {
-    RUNNING, STOPPING, STOPPED;
+    RUNNING, STOPPING, STOPPED
   }
 }
