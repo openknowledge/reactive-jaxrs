@@ -25,6 +25,7 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
   private final Annotation[] annotations;
   private final MediaType mediaType;
   private final MultivaluedMap<String, Object> httpHeaders;
+  private NonClosableOutputStream nonClosableOutputStream;
 
   public AsyncContextMessageBodyWriterSubscriber(AsyncContext asyncContext, MessageBodyWriter entityWriter, Class<?> targetClass,
                                                  Type targetType, Annotation[] annotations, MediaType mediaType,
@@ -42,7 +43,8 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
   public void onSubscribe(Flow.Subscription subscription) {
     super.onSubscribe(subscription);
     try {
-      asyncContext.getResponse().getOutputStream().setWriteListener(new WriteListener() {
+      ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
+      outputStream.setWriteListener(new WriteListener() {
 
         @Override
         public void onWritePossible() throws IOException {
@@ -54,6 +56,7 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
           AsyncContextMessageBodyWriterSubscriber.this.onError(error);
         }
       });
+      nonClosableOutputStream = new NonClosableOutputStream(outputStream);
     } catch (IOException e) {
       onError(e);
     }
@@ -69,7 +72,7 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
       } else {
         outputStream.print(',');
       }
-      entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, new NonClosableOutputStream(outputStream));
+      entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, nonClosableOutputStream);
       outputStream.flush();
 
     } catch (IOException e) {
@@ -87,6 +90,7 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
       outputStream.println(']');
       outputStream.flush();
       asyncContext.complete();
+      nonClosableOutputStream.closeAsync();
     } catch (IOException e) {
       // we are finished, ignoring errors
     }
