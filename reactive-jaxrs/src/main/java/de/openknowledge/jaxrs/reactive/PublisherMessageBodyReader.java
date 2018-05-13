@@ -20,9 +20,12 @@ import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.concurrent.Flow;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -38,6 +41,8 @@ import de.openknowledge.reactive.json.JsonTokenizer;
 
 @Provider
 public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publisher<?>> {
+
+  private static final Logger LOGGER = Logger.getLogger(PublisherMessageBodyReader.class.getCanonicalName());
 
   @Context
   private HttpServletRequest request;
@@ -62,13 +67,13 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
 
     Class targetClass;
 
-    // TODO throw exception should be onError
     if (targetType instanceof Class) {
       targetClass = (Class) targetType;
     } else if (targetType instanceof ParameterizedType) {
       targetClass = (Class) ((ParameterizedType) targetType).getRawType();
     } else {
-      throw new IllegalArgumentException();
+      LOGGER.log(Level.SEVERE, "Unknown target type {0}", targetType);
+      throw new IllegalArgumentException("Unknown target type " + targetType);
     }
 
     final MessageBodyReader<?> entityReader = providers.getMessageBodyReader(targetClass, targetType, annotations, mediaType);
@@ -79,15 +84,16 @@ public class PublisherMessageBodyReader implements MessageBodyReader<Flow.Publis
     // TODO is it really necessary? next readFrom is otherwise blocking, wtf?!
     entityReader.readFrom(targetClass, targetType, annotations, mediaType, headers, IOUtils.toInputStream(""));
 
-    ServletInputStream servletInputStream = null;
+    ServletInputStream servletInputStream;
     try {
       servletInputStream = request.getInputStream();
     } catch (IOException e) {
-      // TODO
-      e.printStackTrace();
+      LOGGER.log(Level.SEVERE, "Unexpected IO behavior", e);
+      throw new InternalServerErrorException("Unexpected IO behavior", e);
     }
     if (servletInputStream == null) {
-      throw new IllegalArgumentException();
+      LOGGER.severe("Can not retrieve ServletInputStream");
+      throw new IllegalArgumentException("Can not retrieve ServletInputStream");
     }
 
     request.startAsync();

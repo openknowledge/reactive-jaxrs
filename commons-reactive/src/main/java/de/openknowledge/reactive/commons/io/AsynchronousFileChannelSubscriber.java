@@ -53,7 +53,7 @@ public class AsynchronousFileChannelSubscriber extends AbstractSubscriber<ByteBu
 
   @Override
   public void onError(Throwable error) {
-    // TODO log error
+    super.onError(error);
     shutdown();
   }
 

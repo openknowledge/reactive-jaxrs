@@ -52,10 +52,10 @@ public class DelegatingProbeProcessor<T, R> extends AbstractSimpleProcessor<T, R
   }
 
   @Override
-  public void onError(Throwable cause) {
+  public void onError(Throwable error) {
     // in addition to normal Subscriber work that you're testing, register onError with the probe
-    processor.onError(cause);
-    probe.registerOnError(cause);
+    processor.onError(error);
+    probe.registerOnError(error);
   }
 
   @Override
