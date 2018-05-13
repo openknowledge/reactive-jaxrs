@@ -38,7 +38,6 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
 
   @Override
   public void onComplete() {
-    // TODO error handling
     if (byteBuffer != null) {
       decoder.decode(byteBuffer, charBuffer, true);
       decoder.flush(charBuffer);

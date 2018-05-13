@@ -2,8 +2,12 @@ package de.openknowledge.reactive.commons;
 
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class AbstractSubscriber<T> implements Subscriber<T> {
+
+  private static final Logger LOGGER = Logger.getLogger(AbstractSubscriber.class.getCanonicalName());
 
   private Subscription subscription;
 
@@ -19,10 +23,11 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T> {
   }
 
   @Override
-  public void onError(Throwable e) {
-    if (e == null) {
+  public void onError(Throwable error) {
+    if (error == null) {
       throw new NullPointerException("error may not be null");
     }
+    LOGGER.log(Level.SEVERE, "Encountered exception", error);
   }
 
   protected boolean hasSubscription() {
@@ -40,7 +45,7 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T> {
     Subscription s = subscription;
     if (s != null) {
       s.cancel();
-    } 
+    }
     subscription = null;
   }
 }

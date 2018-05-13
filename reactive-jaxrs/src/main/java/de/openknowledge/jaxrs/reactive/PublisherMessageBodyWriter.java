@@ -21,10 +21,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Publisher;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -35,6 +35,8 @@ import javax.ws.rs.ext.Providers;
 
 @Provider
 public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publisher<?>> {
+
+  private static final Logger LOGGER = Logger.getLogger(PublisherMessageBodyWriter.class.getCanonicalName());
 
   @Context
   private HttpServletRequest request;
@@ -69,75 +71,11 @@ public class PublisherMessageBodyWriter implements MessageBodyWriter<Flow.Publis
 
     MessageBodyWriter entityWriter = providers.getMessageBodyWriter(targetClass, targetType, annotations, mediaType);
     if (entityWriter == null) {
+      LOGGER.log(Level.SEVERE, "No MessageBodyWriter was found for {0}, {1}, {2}, {3}", new Object[]{targetClass, targetType, annotations, mediaType});
       throw new IllegalArgumentException();
     }
     entityWriter.writeTo(null, targetClass, targetType, annotations, mediaType, httpHeaders, new ByteArrayOutputStream());
 
-    publisher.subscribe(new Flow.Subscriber<Object>() {
-      private boolean first = true;
-
-      @Override
-      public void onSubscribe(Flow.Subscription subscription) {
-        try {
-          asyncContext.getResponse().getOutputStream().setWriteListener(new WriteListener() {
-
-            @Override
-            public void onWritePossible() throws IOException {
-              subscription.request(Long.MAX_VALUE);
-            }
-
-            @Override
-            public void onError(Throwable error) {
-              // TODO error handling
-              error.printStackTrace();
-            }
-          });
-        } catch (IOException e) {
-          // TODO error handling
-          e.printStackTrace();
-        }
-      }
-
-      @Override
-      public void onNext(Object item) {
-        try {
-          ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
-          if (first) {
-            outputStream.print('[');
-            first = false;
-          } else {
-            outputStream.print(',');
-          }
-          entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, new NonClosableOutputStream
-            (outputStream));
-          outputStream.flush();
-
-        } catch (IOException e) {
-          // TODO
-          e.printStackTrace();
-        }
-      }
-
-      @Override
-      public void onError(Throwable throwable) {
-        // TODO
-        throwable.printStackTrace();
-      }
-
-      @Override
-      public void onComplete() {
-        try {
-          ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
-          if (first) {
-            outputStream.print('[');
-          }
-          outputStream.println(']');
-          outputStream.flush();
-          asyncContext.complete();
-        } catch (IOException e) {
-          // we are finished, ignoring errors
-        }
-      }
-    });
+    publisher.subscribe(new AsyncContextMessageBodyWriterSubscriber(asyncContext, entityWriter, targetClass, targetType, annotations, mediaType, httpHeaders));
   }
 }

@@ -18,9 +18,9 @@ public abstract class AbstractSimpleProcessor<T, R> extends AbstractSubscriber<T
   }
 
   @Override
-  public void onError(Throwable e) {
-    super.onError(e);
-    subscription.publish(e);
+  public void onError(Throwable error) {
+    super.onError(error);
+    subscription.publish(error);
   }
 
   protected void publish(R item) {

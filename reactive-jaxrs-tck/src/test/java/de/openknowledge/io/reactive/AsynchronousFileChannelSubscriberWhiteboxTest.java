@@ -70,10 +70,10 @@ public class AsynchronousFileChannelSubscriberWhiteboxTest extends FlowSubscribe
       }
 
       @Override
-      public void onError(Throwable cause) {
+      public void onError(Throwable error) {
         // in addition to normal Subscriber work that you're testing, register onError with the probe
-        super.onError(cause);
-        probe.registerOnError(cause);
+        super.onError(error);
+        probe.registerOnError(error);
       }
 
       @Override
