@@ -53,7 +53,7 @@ public class CustomerTest {
   public static WebArchive deployment() {
     PomEquippedResolveStage pom = Maven.resolver().loadPomFromFile("pom.xml");
 
-    String[] libraries = new String[]{"de.undercouch:actson", "commons-io:commons-io"};
+    String[] libraries = new String[]{"commons-io:commons-io"};
 
     return ShrinkWrap.create(WebArchive.class)
       .addPackage(SingleItemPublisher.class.getPackage())
