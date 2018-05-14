@@ -117,4 +117,22 @@ public class CustomerTest {
 
     assertThat(customers).isEqualTo(List.of(john, jane));
   }
+
+  @Test
+  public void getCustomer(@ArquillianResource URL url) throws URISyntaxException {
+
+    Response response = ClientBuilder.newClient().target(url.toURI())
+      .path("reactive/customers/single")
+      .request(MediaType.APPLICATION_JSON)
+      .get();
+
+    Customer customer = response.readEntity(new GenericType<Customer>() {});
+
+    Customer john = new Customer();
+    john.setFirstName("John");
+    john.setLastName("Doe");
+
+    assertThat(customer).isEqualTo(john);
+
+  }
 }

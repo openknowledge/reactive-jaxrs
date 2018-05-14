@@ -13,7 +13,8 @@
 package de.openknowledge.jaxrs.reactive.test;
 
 import java.io.IOException;
-import java.util.concurrent.Flow;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Flow.Publisher;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -41,7 +42,17 @@ public class ReactiveCustomerResource {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public Flow.Publisher<Customer> getCustomers() throws IOException {
+  public Publisher<Customer> getCustomers() throws IOException {
     return repository.findAllAsync();
   }
+
+  @GET
+  @Path("/single")
+  @Produces(MediaType.APPLICATION_JSON)
+  public CompletionStage<Customer> getCustomer() {
+    CompletableFuture<Customer> future = new CompletableFuture<>();
+    future.complete(new Customer("John", "Doe"));
+    return future;
+  }
+
 }
