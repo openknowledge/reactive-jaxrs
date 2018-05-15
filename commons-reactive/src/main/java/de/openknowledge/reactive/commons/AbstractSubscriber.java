@@ -48,6 +48,10 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T> {
   }
 
   protected Logger getLogger() {
-    return Logger.getLogger(getClass().getCanonicalName());
+    String name = getClass().getCanonicalName();
+    if (name == null) {
+      name = getClass().getSimpleName();
+    }
+    return Logger.getLogger(name);
   }
 }
