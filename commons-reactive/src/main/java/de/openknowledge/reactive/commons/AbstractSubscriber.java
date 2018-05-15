@@ -7,8 +7,6 @@ import java.util.logging.Logger;
 
 public abstract class AbstractSubscriber<T> implements Subscriber<T> {
 
-  private static final Logger LOGGER = Logger.getLogger(AbstractSubscriber.class.getCanonicalName());
-
   private Subscription subscription;
 
   @Override
@@ -27,7 +25,7 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T> {
     if (error == null) {
       throw new NullPointerException("error may not be null");
     }
-    LOGGER.log(Level.SEVERE, "Encountered exception", error);
+    getLogger().log(Level.SEVERE, "Encountered exception", error);
   }
 
   protected boolean hasSubscription() {
@@ -47,5 +45,9 @@ public abstract class AbstractSubscriber<T> implements Subscriber<T> {
       s.cancel();
     }
     subscription = null;
+  }
+
+  protected Logger getLogger() {
+    return Logger.getLogger(getClass().getCanonicalName());
   }
 }
