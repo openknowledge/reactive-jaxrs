@@ -48,7 +48,7 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
 
         @Override
         public void onWritePossible() throws IOException {
-          request(Long.MAX_VALUE);
+          request(1L);
         }
 
         @Override
@@ -57,6 +57,9 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
         }
       });
       nonClosableOutputStream = new NonClosableOutputStream(outputStream);
+      if (outputStream.isReady()) {
+        request(1L);
+      }
     } catch (IOException e) {
       onError(e);
     }
@@ -74,6 +77,10 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
       }
       entityWriter.writeTo(item, targetClass, targetType, annotations, mediaType, httpHeaders, nonClosableOutputStream);
       outputStream.flush();
+      
+      if (outputStream.isReady()) {
+        request(1L);
+      }
 
     } catch (IOException e) {
       onError(e);
