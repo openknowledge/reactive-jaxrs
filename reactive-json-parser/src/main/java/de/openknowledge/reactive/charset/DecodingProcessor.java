@@ -12,6 +12,7 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
   private CharsetDecoder decoder;
   private ByteBuffer byteBuffer;
   private CharBuffer charBuffer;
+  private boolean completed;
 
   public DecodingProcessor(Charset charset, int bufferSize) {
     decoder = charset.newDecoder();
@@ -47,9 +48,18 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
       super.onComplete();
     } else if (isRequested()) {
       publish(charBuffer);
+      super.onComplete();
     } else {
-      throw new IllegalStateException("Should not happen");
-      // TODO what shall we do? We have remaining items but no one requested them, I think it should not happen
+      completed = true;
+    }
+  }
+
+  protected void request(long n) {
+    if (completed && n > 0) {
+      publish(charBuffer);
+      super.onComplete();
+    } else {
+      super.request(n);
     }
   }
 }
