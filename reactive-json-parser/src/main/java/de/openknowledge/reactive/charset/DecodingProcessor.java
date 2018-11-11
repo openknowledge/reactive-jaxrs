@@ -54,6 +54,7 @@ public class DecodingProcessor extends AbstractSimpleProcessor<ByteBuffer, CharB
     }
   }
 
+  @Override
   protected void request(long n) {
     if (completed && n > 0) {
       publish(charBuffer);
