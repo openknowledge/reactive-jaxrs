@@ -100,6 +100,25 @@ public class AsyncContextMessageBodyWriterSubscriber extends AbstractSubscriber<
       nonClosableOutputStream.closeAsync();
     } catch (IOException e) {
       // we are finished, ignoring errors
+    } finally {
+      closeStream();
+    }
+  }
+
+  @Override
+  public void onError(Throwable error) {
+    super.onError(error);
+
+    closeStream();
+  }
+
+  private void closeStream() {
+    if (nonClosableOutputStream != null) {
+      try {
+        nonClosableOutputStream.closeAsync();
+      } catch (IOException e) {
+        // ignore errors during close
+      }
     }
   }
 }
